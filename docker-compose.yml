@@ -1,34 +1,22 @@
 services:
-  frontend:
+  nginx:
     build:
-      context: frontend
-    env_file:
-      - frontend/.env
-    volumes:
-      - frontend:/app/frontend/dist
-
-  mongo:
-    image: mongo
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - db:/data/db
+      context: .
+      dockerfile: nginx/Dockerfile
     ports:
-      - 27018:27017
+      - 80:80
     networks:
       - internal
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/dist:/var/app:ro
 
   backend:
-    restart: always
     build:
       context: backend
     env_file:
       - backend/.env
-    volumes:
-      - ./backend/src:/app/src
-      - public:/app/src/public
     ports:
       - 3000:3000
     networks:
@@ -36,24 +24,14 @@ services:
     depends_on:
       - mongo
 
-  server:
-    build:
-      context: nginx
+  mongo:
+    image: mongo
     ports:
-      - 80:80
-    volumes:
-      - frontend:/var/app
-      - public:/var/public
-    depends_on:
-      - frontend
-      - backend
+      - 27018:27017
     networks:
       - internal
-
-volumes:
-  frontend:
-  public:
-  db:
-
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
 networks:
   internal:

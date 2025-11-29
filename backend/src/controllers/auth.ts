@@ -10,6 +10,10 @@ import NotFoundError from '../errors/not-found-error'
 import UnauthorizedError from '../errors/unauthorized-error'
 import User from '../models/user'
 
+const CSRF_COOKIE_NAME = 'csrfToken'
+
+const generateCsrfToken = () => crypto.randomBytes(32).toString('hex')
+
 // POST /auth/login
 const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -22,6 +26,12 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        const csrfToken = generateCsrfToken()
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+        httpOnly: false,      // нужно, чтобы фронт прочитал через document.cookie
+        sameSite: 'lax',      // минимум Lax
+        secure: process.env.NODE_ENV === 'production',
+        })
         return res.json({
             success: true,
             user,
@@ -46,6 +56,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        const csrfToken = generateCsrfToken()
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+            httpOnly: false,      // нужно, чтобы фронт прочитал через document.cookie
+            sameSite: 'lax',      // минимум Lax
+            secure: process.env.NODE_ENV === 'production',
+        })
         return res.status(constants.HTTP_STATUS_CREATED).json({
             success: true,
             user: newUser,
@@ -154,6 +170,12 @@ const refreshAccessToken = async (
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        const csrfToken = generateCsrfToken()
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+            httpOnly: false,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+        })
         return res.json({
             success: true,
             user: userWithRefreshTkn,

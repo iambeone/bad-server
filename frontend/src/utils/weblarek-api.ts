@@ -18,6 +18,13 @@ import {
 } from '@types'
 import { getCookie, setCookie } from './cookie'
 
+const getCsrfTokenHeader = () => {
+  const token = getCookie('csrfToken')
+  console.log('token: ', token)
+  return token ?? ''
+}
+
+
 export const enum RequestStatus {
     Idle = 'idle',
     Loading = 'loading',
@@ -29,11 +36,13 @@ export type ApiListResponse<Type> = {
     total: number
     items: Type[]
 }
+console.log('*** API MODULE LOADED ***')
 
 class Api {
+    
     private readonly baseUrl: string
     protected options: RequestInit
-
+    
     constructor(baseUrl: string, options: RequestInit = {}) {
         this.baseUrl = baseUrl
         this.options = {
@@ -42,7 +51,7 @@ class Api {
             },
         }
     }
-
+    
     protected handleResponse<T>(response: Response): Promise<T> {
         return response.ok
             ? response.json()
@@ -75,24 +84,42 @@ class Api {
     protected requestWithRefresh = async <T>(
         endpoint: string,
         options: RequestInit
-    ) => {
+        ) => {
+        const baseHeaders = {
+            ...(options.headers || {}),
+            'X-CSRF-Token': getCsrfTokenHeader(),
+        }
+
+        console.log('requestWithRefresh FIRST', endpoint, baseHeaders)
+
         try {
-            return await this.request<T>(endpoint, options)
+            return await this.request<T>(endpoint, {
+            ...options,
+            headers: baseHeaders,
+            })
         } catch (error) {
             const refreshData = await this.refreshToken()
             if (!refreshData.success) {
-                return Promise.reject(refreshData)
+            return Promise.reject(refreshData)
             }
+
             setCookie('accessToken', refreshData.accessToken)
+
+            const retryHeaders = {
+            ...baseHeaders,
+            Authorization: `Bearer ${getCookie('accessToken')}`,
+            }
+
+            console.log('requestWithRefresh RETRY', endpoint, retryHeaders)
+
             return await this.request<T>(endpoint, {
                 ...options,
-                headers: {
-                    ...options.headers,
-                    Authorization: `Bearer ${getCookie('accessToken')}`,
-                },
+                headers: retryHeaders,
             })
         }
     }
+
+
 }
 
 export interface IWebLarekAPI {
@@ -147,12 +174,15 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
     }
 
     createOrder = (order: IOrder): Promise<IOrderResult> => {
+        console.log('WEBLAREK API createOrder CALL')
         return this.requestWithRefresh<IOrderResult>('/order', {
             method: 'POST',
             body: JSON.stringify(order),
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${getCookie('accessToken')}`,
+                'X-CSRF-Token': getCsrfTokenHeader(),
+                
             },
         }).then((data: IOrderResult) => data)
     }
@@ -208,7 +238,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
     getOrderByNumber = (orderNumber: string): Promise<IOrderResult> => {
         return this.requestWithRefresh<IOrderResult>(`/order/${orderNumber}`, {
             method: 'GET',
-            headers: { Authorization: `Bearer ${getCookie('accessToken')}` },
+            headers: { Authorization: `Bearer ${getCookie('accessToken')}`, },
         })
     }
 
@@ -232,6 +262,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
             body: JSON.stringify(data),
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfTokenHeader(),
             },
             credentials: 'include',
         })
@@ -243,6 +274,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
             body: JSON.stringify(data),
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfTokenHeader(),
             },
             credentials: 'include',
         })
@@ -251,14 +283,14 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
     getUser = () => {
         return this.requestWithRefresh<UserResponse>('/auth/user', {
             method: 'GET',
-            headers: { Authorization: `Bearer ${getCookie('accessToken')}` },
+            headers: { Authorization: `Bearer ${getCookie('accessToken')}`, },
         })
     }
 
     getUserRoles = () => {
         return this.requestWithRefresh<string[]>('/auth/user/roles', {
             method: 'GET',
-            headers: { Authorization: `Bearer ${getCookie('accessToken')}` },
+            headers: { Authorization: `Bearer ${getCookie('accessToken')}`, },
         })
     }
 
@@ -322,6 +354,7 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
             body: data,
             headers: {
                 Authorization: `Bearer ${getCookie('accessToken')}`,
+                'X-CSRF-Token': getCsrfTokenHeader(),
             },
         }).then((data) => ({
             ...data,
