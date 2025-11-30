@@ -4,10 +4,11 @@ import { SyntheticEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useActionCreators, useDispatch } from '../../services/hooks'
 import { userActions } from '../../services/slice/user'
+import { logoutUser } from '../../services/slice/user/thunk';
 import styles from './logout-page.module.scss'
 export default function LogoutPage() {
     const dispatch = useDispatch()
-    const { logoutUser, resetUser } = useActionCreators(userActions)
+    const { resetUser } = useActionCreators(userActions)
     const navigate = useNavigate()
     const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault()

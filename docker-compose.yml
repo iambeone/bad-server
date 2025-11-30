@@ -2,27 +2,35 @@ services:
   frontend:
     build: ./frontend
     image: frontend
+
   server:
-    build: ./server
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     ports:
       - "80:80"
     depends_on:
       - backend
+
   backend:
     build: ./backend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mongo
     volumes:
       - ./backend:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+
   mongo:
     image: mongo:6
     ports:
-      - "27017:27017"
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
 
 volumes:
   mongo_data:

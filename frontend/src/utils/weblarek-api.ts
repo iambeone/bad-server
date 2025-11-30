@@ -36,7 +36,7 @@ export type ApiListResponse<Type> = {
     total: number
     items: Type[]
 }
-console.log('*** API MODULE LOADED ***')
+console.log('*** API MODULE LOADED! ***')
 
 class Api {
     

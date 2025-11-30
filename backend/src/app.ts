@@ -15,6 +15,8 @@ import routes from './routes'
 const { PORT = 3000 } = process.env
 const { ORIGIN_ALLOW } = process.env
 const app = express()
+const staticDir = path.join(__dirname, '..', 'public');
+app.use(serveStatic(staticDir));
 
 app.use(cookieParser())
 
