@@ -75,50 +75,65 @@ const createProduct = async (
 // TODO: Добавить guard admin
 // PUT /product
 const updateProduct = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
-    try {
-        const { productId } = req.params
-        const { image } = req.body
+  try {
+    const { productId } = req.params;
+    const { image } = req.body;
 
-        // Переносим картинку из временной папки
-        if (image) {
-            movingFile(
-                image.fileName,
-                join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
-                join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
-            )
-        }
-
-        const product = await Product.findByIdAndUpdate(
-            productId,
-            {
-                $set: {
-                    ...req.body,
-                    price: req.body.price ? req.body.price : null,
-                    image: req.body.image ? req.body.image : undefined,
-                },
-            },
-            { runValidators: true, new: true }
-        ).orFail(() => new NotFoundError('Нет товара по заданному id'))
-        return res.send(product)
-    } catch (error) {
-        if (error instanceof MongooseError.ValidationError) {
-            return next(new BadRequestError(error.message))
-        }
-        if (error instanceof MongooseError.CastError) {
-            return next(new BadRequestError('Передан не валидный ID товара'))
-        }
-        if (error instanceof Error && error.message.includes('E11000')) {
-            return next(
-                new ConflictError('Товар с таким заголовком уже существует')
-            )
-        }
-        return next(error)
+    if (image) {
+      movingFile(
+        image.fileName,
+        join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
+        join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
+      );
     }
-}
+
+    const allowedFields = ['title', 'description', 'category', 'price'] as const;
+    type UpdatableField = (typeof allowedFields)[number];
+
+    const updateData: Partial<Record<UpdatableField, unknown>> = {};
+
+    for (const key of allowedFields) {
+      if (key in req.body) {
+        updateData[key] = req.body[key];
+      }
+    }
+
+    if ('price' in updateData && updateData.price !== null) {
+      updateData.price = Number(updateData.price);
+    }
+
+    const product = await Product.findByIdAndUpdate(
+      productId,
+      {
+        $set: {
+          ...updateData,
+          price: 'price' in updateData ? updateData.price : null,
+          image: image ?? undefined,
+        },
+      },
+      { runValidators: true, new: true }
+    ).orFail(() => new NotFoundError('Нет товара по заданному id'));
+
+    return res.send(product);
+  } catch (error) {
+    if (error instanceof MongooseError.ValidationError) {
+      return next(new BadRequestError(error.message));
+    }
+    if (error instanceof MongooseError.CastError) {
+      return next(new BadRequestError('Передан не валидный ID товара'));
+    }
+    if (error instanceof Error && error.message.includes('E11000')) {
+      return next(
+        new ConflictError('Товар с таким заголовком уже существует')
+      );
+    }
+    return next(error);
+  }
+};
 
 // TODO: Добавить guard admin
 // DELETE /product

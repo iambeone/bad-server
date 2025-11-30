@@ -187,21 +187,19 @@ const refreshAccessToken = async (
 }
 
 const getCurrentUserRoles = async (
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
 ) => {
     const userId = res.locals.user._id
     try {
-        await User.findById(userId, req.body, {
-            new: true,
-        }).orFail(
+        const user = await User.findById(userId, { roles: 1 }).orFail(
             () =>
                 new NotFoundError(
                     'Пользователь по заданному id отсутствует в базе'
                 )
         )
-        res.status(200).json(res.locals.user.roles)
+        res.status(200).json({ roles: user.roles, success: true })
     } catch (error) {
         next(error)
     }
@@ -214,14 +212,27 @@ const updateCurrentUser = async (
 ) => {
     const userId = res.locals.user._id
     try {
-        const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
+        const allowedFields = ['name', 'phone'] as const
+        type UpdatableField = (typeof allowedFields)[number]
+
+        const updateData: Partial<Record<UpdatableField, unknown>> = {}
+
+        for (const key of allowedFields) {
+            if (key in req.body) {
+                updateData[key] = req.body[key as UpdatableField]
+            }
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
             new: true,
+            runValidators: true,
         }).orFail(
             () =>
                 new NotFoundError(
                     'Пользователь по заданному id отсутствует в базе'
                 )
         )
+
         res.status(200).json(updatedUser)
     } catch (error) {
         next(error)

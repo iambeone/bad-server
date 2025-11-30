@@ -23,6 +23,13 @@ services:
       - internal
     depends_on:
       - mongo
+    volumes:
+      - ./backend:/app        # исходники внутрь
+      - /app/node_modules     # чтобы node_modules не затирался
+    command: npm run dev      # запускаем nodemon
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
 
   mongo:
     image: mongo
@@ -33,5 +40,9 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+    - mongo_data:/data/db
 networks:
   internal:
+volumes:
+  mongo_data:

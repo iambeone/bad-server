@@ -6,148 +6,178 @@ import Order, { IOrder } from '../models/order'
 import Product, { IProduct } from '../models/product'
 import User from '../models/user'
 
+
+const allowedSortFields = [
+  'createdAt',
+  'totalAmount',
+  'orderNumber',
+  'status',
+] as const;
+
+type SortField = (typeof allowedSortFields)[number];
+
+function isSortField(value: string): value is SortField {
+  return (allowedSortFields as readonly string[]).includes(value);
+}
+
+function getSortField(raw: unknown): SortField {
+  if (typeof raw !== 'string') return 'createdAt';
+  return isSortField(raw) ? raw : 'createdAt';
+}
+
+function getSortOrder(raw: unknown): 1 | -1 {
+  if (raw === 'asc') return 1;
+  if (raw === 'desc') return -1;
+  return -1;
+}
+
 // eslint-disable-next-line max-len
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&orderDateFrom=2024-07-01&orderDateTo=2024-08-01&status=delivering&totalAmountFrom=100&totalAmountTo=1000&search=%2B1
 
 export const getOrders = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
-    try {
-        const {
-            page = 1,
-            limit = 10,
-            sortField = 'createdAt',
-            sortOrder = 'desc',
-            status,
-            totalAmountFrom,
-            totalAmountTo,
-            orderDateFrom,
-            orderDateTo,
-            search,
-        } = req.query
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortField,
+      sortOrder,
+      status,
+      totalAmountFrom,
+      totalAmountTo,
+      orderDateFrom,
+      orderDateTo,
+      search,
+    } = req.query;
 
-        const filters: FilterQuery<Partial<IOrder>> = {}
+    const filters: FilterQuery<Partial<IOrder>> = {};
 
-        if (status) {
-            if (typeof status === 'object') {
-                Object.assign(filters, status)
-            }
-            if (typeof status === 'string') {
-                filters.status = status
-            }
-        }
-
-        if (totalAmountFrom) {
-            filters.totalAmount = {
-                ...filters.totalAmount,
-                $gte: Number(totalAmountFrom),
-            }
-        }
-
-        if (totalAmountTo) {
-            filters.totalAmount = {
-                ...filters.totalAmount,
-                $lte: Number(totalAmountTo),
-            }
-        }
-
-        if (orderDateFrom) {
-            filters.createdAt = {
-                ...filters.createdAt,
-                $gte: new Date(orderDateFrom as string),
-            }
-        }
-
-        if (orderDateTo) {
-            filters.createdAt = {
-                ...filters.createdAt,
-                $lte: new Date(orderDateTo as string),
-            }
-        }
-
-        const aggregatePipeline: any[] = [
-            { $match: filters },
-            {
-                $lookup: {
-                    from: 'products',
-                    localField: 'products',
-                    foreignField: '_id',
-                    as: 'products',
-                },
-            },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'customer',
-                    foreignField: '_id',
-                    as: 'customer',
-                },
-            },
-            { $unwind: '$customer' },
-            { $unwind: '$products' },
-        ]
-
-        if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
-            const searchNumber = Number(search)
-
-            const searchConditions: any[] = [{ 'products.title': searchRegex }]
-
-            if (!Number.isNaN(searchNumber)) {
-                searchConditions.push({ orderNumber: searchNumber })
-            }
-
-            aggregatePipeline.push({
-                $match: {
-                    $or: searchConditions,
-                },
-            })
-
-            filters.$or = searchConditions
-        }
-
-        const sort: { [key: string]: any } = {}
-
-        if (sortField && sortOrder) {
-            sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
-        }
-
-        aggregatePipeline.push(
-            { $sort: sort },
-            { $skip: (Number(page) - 1) * Number(limit) },
-            { $limit: Number(limit) },
-            {
-                $group: {
-                    _id: '$_id',
-                    orderNumber: { $first: '$orderNumber' },
-                    status: { $first: '$status' },
-                    totalAmount: { $first: '$totalAmount' },
-                    products: { $push: '$products' },
-                    customer: { $first: '$customer' },
-                    createdAt: { $first: '$createdAt' },
-                },
-            }
-        )
-
-        const orders = await Order.aggregate(aggregatePipeline)
-        const totalOrders = await Order.countDocuments(filters)
-        const totalPages = Math.ceil(totalOrders / Number(limit))
-
-        res.status(200).json({
-            orders,
-            pagination: {
-                totalOrders,
-                totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
-            },
-        })
-    } catch (error) {
-        next(error)
+    // статус: строка или массив строк
+    if (status) {
+      if (typeof status === 'string') {
+        filters.status = status;
+      } else if (Array.isArray(status)) {
+        filters.status = { $in: status };
+      }
     }
-}
+
+    // фильтр по сумме
+    if (totalAmountFrom) {
+      filters.totalAmount = {
+        ...filters.totalAmount,
+        $gte: Number(totalAmountFrom),
+      };
+    }
+
+    if (totalAmountTo) {
+      filters.totalAmount = {
+        ...filters.totalAmount,
+        $lte: Number(totalAmountTo),
+      };
+    }
+
+    // фильтр по дате заказа
+    if (orderDateFrom) {
+      filters.createdAt = {
+        ...filters.createdAt,
+        $gte: new Date(orderDateFrom as string),
+      };
+    }
+
+    if (orderDateTo) {
+      filters.createdAt = {
+        ...filters.createdAt,
+        $lte: new Date(orderDateTo as string),
+      };
+    }
+
+    const aggregatePipeline: any[] = [
+      { $match: filters },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'products',
+          foreignField: '_id',
+          as: 'products',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'customer',
+          foreignField: '_id',
+          as: 'customer',
+        },
+      },
+      { $unwind: '$customer' },
+      { $unwind: '$products' },
+    ];
+
+    // поиск по строке / номеру заказа
+    if (search) {
+      const searchRegex = new RegExp(search as string, 'i');
+      const searchNumber = Number(search);
+
+      const searchConditions: any[] = [{ 'products.title': searchRegex }];
+
+      if (!Number.isNaN(searchNumber)) {
+        searchConditions.push({ orderNumber: searchNumber });
+      }
+
+      aggregatePipeline.push({
+        $match: {
+          $or: searchConditions,
+        },
+      });
+
+      filters.$or = searchConditions;
+    }
+
+    // whitelist сортировка
+    const field = getSortField(sortField);
+    const order = getSortOrder(sortOrder);
+    const sort: Record<string, 1 | -1> = { [field]: order };
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+
+    aggregatePipeline.push(
+      { $sort: sort },
+      { $skip: (pageNum - 1) * limitNum },
+      { $limit: limitNum },
+      {
+        $group: {
+          _id: '$_id',
+          orderNumber: { $first: '$orderNumber' },
+          status: { $first: '$status' },
+          totalAmount: { $first: '$totalAmount' },
+          products: { $push: '$products' },
+          customer: { $first: '$customer' },
+          createdAt: { $first: '$createdAt' },
+        },
+      }
+    );
+
+    const orders = await Order.aggregate(aggregatePipeline);
+    const totalOrders = await Order.countDocuments(filters);
+    const totalPages = Math.ceil(totalOrders / limitNum);
+
+    return res.status(200).json({
+      orders,
+      pagination: {
+        totalOrders,
+        totalPages,
+        currentPage: pageNum,
+        pageSize: limitNum,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
 
 export const getOrdersCurrentUser = async (
     req: Request,

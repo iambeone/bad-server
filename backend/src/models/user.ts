@@ -3,10 +3,12 @@ import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import mongoose, { Document, HydratedDocument, Model, Types } from 'mongoose'
 import validator from 'validator'
+import bcrypt from 'bcryptjs';
 import md5 from 'md5'
 
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../config'
 import UnauthorizedError from '../errors/unauthorized-error'
+import BadRequestError from '../errors/bad-request-error';
 
 export enum Role {
     Customer = 'customer',
@@ -17,6 +19,7 @@ export interface IUser extends Document {
     name: string
     email: string
     password: string
+    passwordFormat: string
     tokens: { token: string }[]
     roles: Role[]
     phone: string
@@ -67,7 +70,11 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
             minlength: [6, 'Минимальная длина поля "password" - 6'],
             select: false,
         },
-
+        passwordFormat: {
+            type: String,
+            enum: ['md5', 'bcrypt'], 
+            default: 'md5',
+        },
         tokens: [
             {
                 token: { required: true, type: String },
@@ -114,16 +121,21 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
 )
 
 // Возможно добавление хеша в контроллере регистрации
-userSchema.pre('save', async function hashingPassword(next) {
+userSchema.pre('save', async function(next) {
     try {
         if (this.isModified('password')) {
-            this.password = md5(this.password)
+            // Если был MD5, переключаем флаг
+            if (this.passwordFormat === 'md5') {
+                this.passwordFormat = 'bcrypt';
+            }
+            // Всегда хэшируем новым алгоритмом
+            this.password = await bcrypt.hash(this.password, 12);
         }
-        next()
+        next();
     } catch (error) {
-        next(error as Error)
+        next(error as Error);
     }
-})
+});
 
 // Можно лучше: централизованное создание accessToken и  refresh токена
 
@@ -171,21 +183,35 @@ userSchema.methods.generateRefreshToken =
         return refreshToken
     }
 
-userSchema.statics.findUserByCredentials = async function findByCredentials(
-    email: string,
-    password: string
-) {
-    const user = await this.findOne({ email })
-        .select('+password')
-        .orFail(() => new UnauthorizedError('Неправильные почта или пароль'))
-    const passwdMatch = md5(password) === user.password
-    if (!passwdMatch) {
-        return Promise.reject(
-            new UnauthorizedError('Неправильные почта или пароль')
-        )
+userSchema.statics.findUserByCredentials = async function(email: string, password: string) {
+    if (!validator.isEmail(email)) {
+        throw new BadRequestError('Некорректный email');
     }
-    return user
+    const user = await this.findOne({ email }).select('+password +passwordFormat');
+    
+    if (!user) {
+        throw new UnauthorizedError('Неправильные почта или пароль');
+    }
+    
+    // Проверяем по формату
+    if (user.passwordFormat === 'md5') {
+        const md5Hash = md5(password);
+        if (md5Hash !== user.password) {
+            throw new UnauthorizedError('Неправильные почта или пароль');
+        }
+        // Автоматическая миграция при логине!
+        user.passwordFormat = 'bcrypt';
+        user.password = password; // временно кладём *plain* пароль
+        await user.save();
+    } else { // bcrypt
+        if (!await bcrypt.compare(password, user.password)) {
+            throw new UnauthorizedError('Неправильные почта или паролe3');
+        }
+    }
+    
+    return user;
 }
+
 
 userSchema.methods.calculateOrderStats = async function calculateOrderStats() {
     const user = this

@@ -1,4 +1,5 @@
 import { errors } from 'celebrate'
+import mongoSanitize from 'express-mongo-sanitize';
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import 'dotenv/config'
@@ -26,6 +27,12 @@ app.use(serveStatic(path.join(__dirname, 'public')))
 
 app.use(urlencoded({ extended: true }))
 app.use(json())
+
+app.use(
+  mongoSanitize({
+    replaceWith: '_',
+  })
+)
 
 app.use(csrfGuard)
 app.options('*', cors())
