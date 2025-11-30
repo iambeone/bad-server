@@ -36,7 +36,7 @@ import MainPage from '@pages/main'
 import ProfilePage from '@pages/profile'
 import RegisterPage from '@pages/register/register-page'
 import { userActions } from '@slices/user'
-import { useActionCreators } from '@store/hooks'
+import { useActionCreators, useDispatch } from '@store/hooks'
 import store, { persistor } from '@store/store'
 import { PropsWithChildren, useEffect } from 'react'
 import { Provider } from 'react-redux'
@@ -59,13 +59,14 @@ const App = () => (
 export default App
 
 const RouteComponent = () => {
+    const dispatch = useDispatch()
     const location = useLocation()
     const navigate = useNavigate()
     const { authCheck, checkUserAuth } = useActionCreators(userActions)
     const handleModalClose = (path: To | number) => () => navigate(path as To)
 
     useEffect(() => {
-        checkUserAuth()
+        dispatch(checkUserAuth())
             .unwrap()
             .finally(() => authCheck())
     }, [checkUserAuth, authCheck])
