@@ -1,29 +1,28 @@
 services:
   frontend:
-    build: .
+    build: ./frontend
+    image: frontend
+  server:
+    build: ./server
     ports:
       - "80:80"
     depends_on:
       - backend
-
   backend:
     build: ./backend
     ports:
       - "3000:3000"
     depends_on:
       - mongo
-    environment:
-      - NODE_ENV=development
     volumes:
       - ./backend:/app
       - /app/node_modules
-
+    environment:
+      - NODE_ENV=development
   mongo:
     image: mongo:6
     ports:
       - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
 
 volumes:
   mongo_data:
