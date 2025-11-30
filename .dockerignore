@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.git
+.env
+*.log
+.nyc_output
+coverage
+.DS_Store
+backend/dist
+frontend/dist
+frontend/node_modules
