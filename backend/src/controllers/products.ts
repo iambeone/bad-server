@@ -94,13 +94,15 @@ const updateProduct = async (
     const allowedFields = ['title', 'description', 'category', 'price'] as const;
     type UpdatableField = (typeof allowedFields)[number];
 
-    const updateData: Partial<Record<UpdatableField, unknown>> = {};
-
-    for (const key of allowedFields) {
-      if (key in req.body) {
-        updateData[key] = req.body[key];
-      }
-    }
+    const updateData = allowedFields.reduce<Partial<Record<UpdatableField, unknown>>>(
+      (acc, key) => {
+        if (key in req.body) {
+          acc[key] = req.body[key];
+        }
+        return acc;
+      },
+      {}
+    );
 
     if ('price' in updateData && updateData.price !== null) {
       updateData.price = Number(updateData.price);

@@ -24,19 +24,23 @@ export const createAsyncThunk = createThunkHook.withTypes<{
 }>()
 
 export const useActionCreators = <Actions extends ActionCreatorsMapObject>(
-    actions: Actions
+  actions: Actions
 ): BoundActions<Actions> => {
-    const dispatch = useDispatch()
+  const dispatch = useDispatch()
 
-    return useMemo(() => bindActionCreators(actions, dispatch), [])
+  return useMemo(
+    () => bindActionCreators(actions, dispatch),
+    [actions, dispatch]
+  )
 }
 
 export type BoundActions<Actions extends ActionCreatorsMapObject> = {
-    [key in keyof Actions]: Actions[key] extends AsyncThunk<any, any, any>
-        ? BoundAsyncThunk<Actions[key]>
-        : Actions[key]
+  [K in keyof Actions]: Actions[K] extends AsyncThunk<any, any, any>
+    ? BoundAsyncThunk<Actions[K]>
+    : Actions[K]
 }
 
+// здесь Thunk – это уже сам AsyncThunk<Returned, ThunkArg, ThunkApiConfig>
 export type BoundAsyncThunk<Thunk extends AsyncThunk<any, any, any>> = (
-    ...args: Parameters<Thunk>
-) => ReturnType<ReturnType<Thunk>>
+  ...args: Parameters<Thunk>
+) => ReturnType<Thunk> 

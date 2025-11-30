@@ -217,11 +217,11 @@ const updateCurrentUser = async (
 
         const updateData: Partial<Record<UpdatableField, unknown>> = {}
 
-        for (const key of allowedFields) {
-            if (key in req.body) {
-                updateData[key] = req.body[key as UpdatableField]
+        Object.entries(req.body).forEach(([key, value]) => {
+            if (allowedFields.includes(key as UpdatableField)) {
+                updateData[key as UpdatableField] = value
             }
-        }
+        })
 
         const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
             new: true,

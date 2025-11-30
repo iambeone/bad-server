@@ -5,6 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "lint": "npx eslint src/**/*.ts",
+    "lint:fix": "npx eslint src/**/*.ts --fix",
     "format": "prettier ./src --write",
     "build": "tsc",
     "dev": "npx nodemon -L src/app.ts ",

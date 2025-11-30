@@ -8,7 +8,7 @@ import Form from '../form/form'
 import useFormWithValidation from '../form/hooks/useFormWithValidation'
 import { ContactsFormValues } from './helpers/types'
 
-import { useActionCreators, useSelector } from '../../services/hooks'
+import { useActionCreators, useDispatch, useSelector } from '../../services/hooks'
 import { basketActions } from '../../services/slice/basket'
 import {
     orderFormActions,
@@ -20,6 +20,7 @@ import styles from './order.module.scss'
 export function OrderContacts() {
     const location = useLocation()
     const navigate = useNavigate()
+    const dispatch = useDispatch()
     const { selectOrderInfo } = orderFormSelector
     const orderPersistData = useSelector(selectOrderInfo)
     const formRef = useRef<HTMLFormElement | null>(null)
@@ -38,7 +39,7 @@ export function OrderContacts() {
             email: orderPersistData.email,
             phone: orderPersistData.phone,
         })
-    }, [orderPersistData])
+    }, [orderPersistData, setValuesForm])
 
     const handleEditInputChange = (value: string) => {
         setValuesForm({ ...values, comment: value })
@@ -48,7 +49,7 @@ export function OrderContacts() {
         e.preventDefault()
         setInfo(values)
         // т.к. на момент отправки запроса данные введенные в поля еще не записаны в store, добавляем в запрос их вручную
-        createOrder({ ...orderPersistData, ...values })
+        dispatch(createOrder({ ...orderPersistData, ...values }))
             .unwrap()
             .then((dataResponse) => {
                 resetBasket()

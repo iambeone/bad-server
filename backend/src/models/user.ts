@@ -203,10 +203,8 @@ userSchema.statics.findUserByCredentials = async function(email: string, passwor
         user.passwordFormat = 'bcrypt';
         user.password = password; // временно кладём *plain* пароль
         await user.save();
-    } else { // bcrypt
-        if (!await bcrypt.compare(password, user.password)) {
-            throw new UnauthorizedError('Неправильные почта или паролe');
-        }
+    } else if (!await bcrypt.compare(password, user.password)) {
+        throw new UnauthorizedError('Неправильные почта или пароль');
     }
     
     return user;

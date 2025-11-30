@@ -5,7 +5,7 @@ import { SyntheticEvent, useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { useActionCreators } from '../../services/hooks'
+import { useActionCreators, useDispatch } from '../../services/hooks'
 import {
     productsActions,
     productsSelector,
@@ -24,6 +24,7 @@ import { ProductFormValues } from './helpers/types'
 
 export default function AdminEditProduct() {
     const navigate = useNavigate()
+    const dispatch = useDispatch()
     const { editId } = useParams()
     const { updateProduct, deleteProduct, uploadImageFile } =
         useActionCreators(productsActions)
@@ -49,7 +50,7 @@ export default function AdminEditProduct() {
             const dataFile = new FormData()
             dataFile.append('file', e.currentTarget.files[0])
 
-            uploadImageFile(dataFile)
+            dispatch(uploadImageFile(dataFile))
                 .unwrap()
                 .then((data) => {
                     setSelectedFile(data)
@@ -71,7 +72,7 @@ export default function AdminEditProduct() {
                 title: currentProduct.title,
             })
         }
-    }, [currentProduct])
+    }, [currentProduct, setValuesForm])
 
     const handleUpdateProduct = async () => {
         if (!selectedCategory) {
@@ -85,7 +86,7 @@ export default function AdminEditProduct() {
         }
 
         editId &&
-            updateProduct({ data: dataProduct, id: editId })
+            dispatch(updateProduct({ data: dataProduct, id: editId }))
                 .unwrap()
                 .then(() => navigateAdminList())
                 .catch((error) => toast.error(error.message))
@@ -97,7 +98,7 @@ export default function AdminEditProduct() {
 
     const handleDeleteProduct = () => {
         editId &&
-            deleteProduct(editId)
+            dispatch(deleteProduct(editId))
                 .unwrap()
                 .then(() => navigateAdminList())
                 .catch((error) => toast.error(error.message))

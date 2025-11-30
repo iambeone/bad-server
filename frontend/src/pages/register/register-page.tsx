@@ -9,7 +9,9 @@ import { userActions } from '../../services/slice/user'
 import { AppRoute } from '../../utils/constants'
 import { RegisterFormValues } from './helpers/types'
 import styles from './register-page.module.scss'
+import { useDispatch } from '../../services/hooks'
 export default function RegisterPage() {
+    const dispatch = useDispatch()
     const formRef = useRef<HTMLFormElement>(null)
     const { values, handleChange, errors, isValid } =
         useFormWithValidation<RegisterFormValues>(
@@ -20,12 +22,19 @@ export default function RegisterPage() {
 
     const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault()
-        registerUser(values)
+        dispatch(registerUser(values))
             .unwrap()
-            .catch((err) => {
-                toast.error(err.message)
+            .then(() => {
+            // успешная регистрация
             })
-    }
+            .catch((err: unknown) => {
+            const message =
+                err && typeof err === 'object' && 'message' in err
+                ? String((err as { message?: string }).message)
+                : 'Не удалось зарегистрироваться'
+            toast.error(message)
+            })
+        }
 
     return (
         <div className={styles.register}>

@@ -206,13 +206,15 @@ export const updateCustomer = async (
     const allowedFields = ['name', 'phone'] as const
     type UpdatableField = (typeof allowedFields)[number]
 
-    const updateData: Partial<Pick<IUser, UpdatableField>> = {}
-
-    for (const key of allowedFields) {
-      if (key in req.body) {
-        updateData[key] = req.body[key]
-      }
-    }
+    const updateData = allowedFields.reduce<Partial<Pick<IUser, UpdatableField>>>(
+      (acc, key) => {
+        if (key in req.body) {
+          acc[key] = req.body[key]
+        }
+        return acc
+      },
+      {}
+    )
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
