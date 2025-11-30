@@ -205,7 +205,7 @@ userSchema.statics.findUserByCredentials = async function(email: string, passwor
         await user.save();
     } else { // bcrypt
         if (!await bcrypt.compare(password, user.password)) {
-            throw new UnauthorizedError('Неправильные почта или паролe3');
+            throw new UnauthorizedError('Неправильные почта или паролe');
         }
     }
     
