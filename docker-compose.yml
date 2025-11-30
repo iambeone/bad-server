@@ -5,12 +5,14 @@ services:
 
   server:
     build:
-      context: .
-      dockerfile: nginx/Dockerfile
+      context: ./nginx
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     depends_on:
       - backend
+    volumes:
+      - ./frontend/dist:/var/app:ro
 
   backend:
     build: ./backend
