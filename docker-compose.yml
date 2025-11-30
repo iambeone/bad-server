@@ -1,42 +1,29 @@
 services:
   frontend:
-    build:
-      context: .
-      target: server  # nginx с фронтом
+    build: .
     ports:
-      - 80:80
-    networks:
-      - internal
+      - "80:80"
     depends_on:
       - backend
 
   backend:
-    build:
-      context: ./backend
+    build: ./backend
     ports:
-      - 3000:3000
-    networks:
-      - internal
+      - "3000:3000"
     depends_on:
       - mongo
+    environment:
+      - NODE_ENV=development
     volumes:
       - ./backend:/app
       - /app/node_modules
-    command: npm run dev
-    environment:
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
 
   mongo:
     image: mongo:6
     ports:
-      - 27017:27017
-    networks:
-      - internal
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
 
-networks:
-  internal:
 volumes:
   mongo_data:
