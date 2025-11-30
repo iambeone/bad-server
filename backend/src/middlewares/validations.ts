@@ -1,6 +1,8 @@
 import { Joi, celebrate } from 'celebrate'
 import { Types } from 'mongoose'
 
+//ReDoS (Regular Expression Denial of Service) не найден
+
 // eslint-disable-next-line no-useless-escape
 export const phoneRegExp = /^(\+\d+)?(?:\s|-?|\(?\d+\)?)+$/
 
