@@ -192,10 +192,14 @@ export const getOrdersCurrentUser = async (
 ) => {
   try {
     const userId = res.locals.user._id;
-    const { search, page = 1, limit = 5 } = req.query;
+    const { search, page, limit } = req.query;
+
+    const pageNum = normalizePage(page);
+    const limitNum = normalizeLimit(limit);
+
     const options = {
-      skip: (Number(page) - 1) * Number(limit),
-      limit: Number(limit),
+      skip: (pageNum - 1) * limitNum,
+      limit: limitNum,
     };
 
     const user = await User.findById(userId)
@@ -234,7 +238,7 @@ export const getOrdersCurrentUser = async (
     }
 
     const totalOrders = orders.length;
-    const totalPages = Math.ceil(totalOrders / Number(limit));
+    const totalPages = Math.ceil(totalOrders / limitNum);
 
     orders = orders.slice(options.skip, options.skip + options.limit);
 
@@ -243,8 +247,8 @@ export const getOrdersCurrentUser = async (
       pagination: {
         totalOrders,
         totalPages,
-        currentPage: Number(page),
-        pageSize: Number(limit),
+        currentPage: pageNum,
+        pageSize: limitNum,
       },
     });
   } catch (error) {
