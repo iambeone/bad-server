@@ -4,7 +4,7 @@ import { join, extname, resolve } from 'path';
 import crypto from 'crypto';
 import multer, { FileFilterCallback } from 'multer';
 import { Request, Express } from 'express';
-import uploadDir from '../init/uploadDir'; // ВАЖНО: путь под твой проект
+import tempDir from '../init/uploadDir'; // ВАЖНО: путь под твой проект
 
 
 type DestinationCallback = (error: Error | null, destination: string) => void;
@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
     _file: Express.Multer.File,
     cb: DestinationCallback
   ) => {
-    cb(null, uploadDir);
+    cb(null, tempDir);
   },
   filename: (
     _req: Request,
