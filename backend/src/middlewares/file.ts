@@ -10,10 +10,10 @@ type FileNameCallback = (error: Error | null, filename: string) => void;
 
 // backend/src/middlewares -> .. -> backend/src/public/temp
 const uploadDir = join(
-  __dirname,
-  '..',
+  process.cwd(),
+  'src',
   'public',
-  process.env.UPLOAD_PATH_TEMP || 'temp'
+  process.env.UPLOAD_PATH_TEMP || 'temp',
 );
 
 if (!fs.existsSync(uploadDir)) {

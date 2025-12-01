@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import fs from 'fs';
 import upload from '../middlewares/file';
 
 const uploadRouter = Router();
@@ -34,22 +35,14 @@ uploadRouter.post('/', upload.single('file'), (req, res, next) => {
 
     // Проверка PNG
     if (req.file.mimetype === 'image/png') {
-      const buffer = req.file.buffer as Buffer | undefined;
+      // читаем то, что Multer сохранил на диск
+      const fileBuffer = fs.readFileSync(req.file.path);
 
-      // Multer с diskStorage по умолчанию НЕ кладёт buffer в req.file,
-      // поэтому для этой проверки нужно использовать memoryStorage
-      // или отдельно прочитать файл с диска.
-      // Если ты переключился на memoryStorage — этот код сработает сразу. [web:21][web:32]
-
-      if (!buffer) {
-        // на всякий случай: если буфера нет, считаем файл недопустимым
+      // «пустой» PNG из теста — 5 МБ нулей → отклоняем
+      if (!isValidPngSignature(fileBuffer) || isAllZero(fileBuffer)) {
         return res.status(400).json({ message: 'Недопустимое изображение' });
       }
-
-      // 5 МБ нулевого буфера из теста — все байты 0 → отклоняем
-      if (isAllZero(buffer) || !isValidPngSignature(buffer)) {
-        return res.status(400).json({ message: 'Недопустимое изображение' });
-      }
+      // валидный PNG (mimage.png) сюда не попадёт → пропускаем
     }
 
     return res.status(200).json({ fileName: req.file.path });
