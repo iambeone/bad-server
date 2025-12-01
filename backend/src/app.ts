@@ -47,7 +47,7 @@ app.use(
 
 app.use(csrfGuard)
 app.options('*', cors())
-app.use(apiLimiter)
+// app.use(apiLimiter)
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)
