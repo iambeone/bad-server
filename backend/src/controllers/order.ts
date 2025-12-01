@@ -87,10 +87,60 @@ export const getOrders = async (
       search,
     } = req.query;
 
-    // В админской ручке /orders/all полностью запрещаем search
+    // 1. Полностью запрещаем search в админской ручке
     if (typeof search !== 'undefined') {
       return next(new BadRequestError('Некорректный параметр поиска'));
     }
+
+    // 2. Защита от объектных/массивных значений в фильтрах
+
+    // status: либо строка, либо массив строк; объекты → 400
+    if (
+      typeof status !== 'undefined' &&
+      !(
+        typeof status === 'string' ||
+        (Array.isArray(status) && status.every((s) => typeof s === 'string'))
+      )
+    ) {
+      return next(new BadRequestError('Некорректный параметр статуса'));
+    }
+
+    // суммы: только числа или строка, приводимая к числу
+    const amountFromNum =
+      typeof totalAmountFrom === 'string'
+        ? Number(totalAmountFrom)
+        : totalAmountFrom;
+    const amountToNum =
+      typeof totalAmountTo === 'string'
+        ? Number(totalAmountTo)
+        : totalAmountTo;
+
+    if (
+      typeof totalAmountFrom !== 'undefined' &&
+      !Number.isFinite(Number(amountFromNum))
+    ) {
+      return next(new BadRequestError('Некорректный параметр суммы'));
+    }
+
+    if (
+      typeof totalAmountTo !== 'undefined' &&
+      !Number.isFinite(Number(amountToNum))
+    ) {
+      return next(new BadRequestError('Некорректный параметр суммы'));
+    }
+
+    // даты: если передано, но parseDate вернул null → 400
+    const fromDate = parseDate(orderDateFrom);
+    if (typeof orderDateFrom !== 'undefined' && !fromDate) {
+      return next(new BadRequestError('Некорректный параметр даты'));
+    }
+
+    const toDate = parseDate(orderDateTo);
+    if (typeof orderDateTo !== 'undefined' && !toDate) {
+      return next(new BadRequestError('Некорректный параметр даты'));
+    }
+
+    // 3. Формируем filters
 
     const filters: FilterQuery<Partial<IOrder>> = {};
 
@@ -102,21 +152,20 @@ export const getOrders = async (
       }
     }
 
-    if (totalAmountFrom) {
+    if (typeof totalAmountFrom !== 'undefined') {
       filters.totalAmount = {
         ...filters.totalAmount,
-        $gte: Number(totalAmountFrom),
+        $gte: Number(amountFromNum),
       };
     }
 
-    if (totalAmountTo) {
+    if (typeof totalAmountTo !== 'undefined') {
       filters.totalAmount = {
         ...filters.totalAmount,
-        $lte: Number(totalAmountTo),
+        $lte: Number(amountToNum),
       };
     }
 
-    const fromDate = parseDate(orderDateFrom);
     if (fromDate) {
       filters.createdAt = {
         ...filters.createdAt,
@@ -124,13 +173,14 @@ export const getOrders = async (
       };
     }
 
-    const toDate = parseDate(orderDateTo);
     if (toDate) {
       filters.createdAt = {
         ...filters.createdAt,
         $lte: toDate,
       };
     }
+
+    // 4. Пагинация и сортировка
 
     const pageNum = normalizePage(page);
     const limitNum = normalizeLimit(limit);
@@ -192,6 +242,7 @@ export const getOrders = async (
     return next(error);
   }
 };
+
 
 export const getOrdersCurrentUser = async (
   req: Request,
