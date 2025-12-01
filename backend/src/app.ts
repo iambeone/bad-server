@@ -1,4 +1,4 @@
-import './init/uploadDir'
+import './init/tempDir'
 import { errors } from 'celebrate'
 import mongoSanitize from 'express-mongo-sanitize';
 import cookieParser from 'cookie-parser'
