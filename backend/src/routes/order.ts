@@ -17,7 +17,6 @@ const orderRouter = Router()
 orderRouter.post('/', auth, validateOrderBody, createOrder)
 orderRouter.get(
   '/all',
-  auth,
   roleGuardMiddleware(Role.Admin),
   getOrders
 );
