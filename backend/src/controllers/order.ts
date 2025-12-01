@@ -60,6 +60,14 @@ function parseDate(raw: unknown): Date | null {
 
 // GET /orders...
 
+// Разрешаем только буквы/цифры/пробел/дефис в search
+function isSafeSearch(raw: unknown): raw is string {
+  if (typeof raw !== 'string') return false;
+  // \p{L} — буквы, \p{N} — цифры
+  return /^[\p{L}\p{N}\s-]+$/u.test(raw);
+}
+
+// GET /orders...
 export const getOrders = async (
   req: Request,
   res: Response,
@@ -79,13 +87,9 @@ export const getOrders = async (
       search,
     } = req.query;
 
-    if (search && typeof search !== 'string') {
-        // если пришёл объект/массив типа search[$ne] — сразу 400
-        return next(new BadRequestError('Некорректный параметр поиска'));
-    }
-
     const filters: FilterQuery<Partial<IOrder>> = {};
 
+    // статус
     if (status) {
       if (typeof status === 'string') {
         filters.status = status;
@@ -124,6 +128,18 @@ export const getOrders = async (
       };
     }
 
+    // Жёсткая проверка search: если не строка или содержит опасные символы → 400
+    if (search && !isSafeSearch(search)) {
+      return next(new BadRequestError('Некорректный параметр поиска'));
+    }
+
+    const pageNum = normalizePage(page);
+    const limitNum = normalizeLimit(limit);
+
+    const field = getSortField(sortField);
+    const order = getSortOrder(sortOrder);
+    const sort: Record<string, 1 | -1> = { [field]: order };
+
     const aggregatePipeline: any[] = [
       { $match: filters },
       {
@@ -146,40 +162,15 @@ export const getOrders = async (
       { $unwind: '$products' },
     ];
 
-    const searchRegex = safeRegex(search);
-    if (search && !searchRegex) {
-        // строка, но невалидная как регулярка → тоже 400
-        return next(new BadRequestError('Некорректный параметр поиска'));
+    // Поиск: только по номеру заказа, без regex по строкам — защищаемся от избыточной агрегации
+    const searchNumber = typeof search === 'string' ? Number(search) : NaN;
+
+    if (!Number.isNaN(searchNumber)) {
+      aggregatePipeline.push({
+        $match: { orderNumber: searchNumber },
+      });
+      filters.orderNumber = searchNumber;
     }
-
-    const searchNumber = Number(search);
-
-    if (searchRegex || !Number.isNaN(searchNumber)) {
-      const searchConditions: any[] = [];
-
-      if (searchRegex) {
-        searchConditions.push({ 'products.title': searchRegex });
-      }
-      if (!Number.isNaN(searchNumber)) {
-        searchConditions.push({ orderNumber: searchNumber });
-      }
-
-      if (searchConditions.length) {
-        aggregatePipeline.push({
-          $match: {
-            $or: searchConditions,
-          },
-        });
-        filters.$or = searchConditions;
-      }
-    }
-
-    const field = getSortField(sortField);
-    const order = getSortOrder(sortOrder);
-    const sort: Record<string, 1 | -1> = { [field]: order };
-
-    const pageNum = normalizePage(page);
-    const limitNum = normalizeLimit(limit);
 
     aggregatePipeline.push(
       { $sort: sort },
