@@ -9,6 +9,10 @@ uploadRouter.post('/', upload.single('file'), (req, res, next) => {
       return res.status(400).json({ message: 'Файл не загружен' });
     }
 
+    if (req.file.size < 2 * 1024) {
+      return res.status(400).json({ message: 'Файл слишком маленький' });
+    }
+
     return res.status(200).json({ fileName: req.file.path });
   } catch (e) {
     return next(e);
