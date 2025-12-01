@@ -73,15 +73,15 @@ export const getCustomers = async (
 
     // 1. Валидация search: режем инъекцию сразу
     if (typeof search !== 'undefined' && typeof search !== 'string') {
-      return next(new BadRequestError('Некорректный параметр поиска'));
+        return next(new BadRequestError('Некорректный параметр поиска'));
     }
 
-    if (
-      typeof search === 'string' &&
-      search.length > 0 &&
-      !/^[\p{L}\p{N}\s-]+$/u.test(search)
-    ) {
-      return next(new BadRequestError('Некорректный параметр поиска'));
+    // Подготовка безопасного RegExp из строки
+    let searchRegex: RegExp | null = null;
+    if (typeof search === 'string' && search.length > 0) {
+        // экранируем спецсимволы, чтобы избежать инъекций в RegExp
+        const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        searchRegex = new RegExp(escaped, 'i');
     }
 
     const filters: FilterQuery<Partial<IUser>> = {};
@@ -149,19 +149,18 @@ export const getCustomers = async (
     }
 
     // 2. Безопасный поиск по name и deliveryAddress
-    if (typeof search === 'string' && search.length > 0) {
-      const searchRegex = new RegExp(search, 'i');
-      const orders = await Order.find(
-        { deliveryAddress: searchRegex },
-        '_id'
-      );
+    if (searchRegex) {
+        const orders = await Order.find(
+            { deliveryAddress: searchRegex },
+            '_id'
+        );
 
-      const orderIds = orders.map((order) => order._id);
+        const orderIds = orders.map((order) => order._id);
 
-      filters.$or = [
-        { name: searchRegex },
-        { lastOrder: { $in: orderIds } },
-      ];
+        filters.$or = [
+            { name: searchRegex },
+            { lastOrder: { $in: orderIds } },
+        ];
     }
 
     const field = getSortField(sortField);

@@ -18,7 +18,7 @@ const { ORIGIN_ALLOW } = process.env
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 минута
-  max: 10,             // например, 10 запросов в минуту с IP
+  max: 10,             // 10 запросов в минуту с IP
   standardHeaders: true,
   legacyHeaders: false,
 });
