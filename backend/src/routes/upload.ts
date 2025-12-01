@@ -1,8 +1,19 @@
-import { Router } from 'express'
-import { uploadFile } from '../controllers/upload'
-import fileMiddleware from '../middlewares/file'
+import { Router } from 'express';
+import upload from '../middlewares/file';
 
-const uploadRouter = Router()
-uploadRouter.post('/', fileMiddleware.single('file'), uploadFile)
+const uploadRouter = Router();
 
-export default uploadRouter
+uploadRouter.post('/', upload.single('file'), (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Файл не загружен' });
+    }
+
+    // важно вернуть путь/имя файла
+    return res.status(200).json({ fileName: req.file.path });
+  } catch (error) {
+    next(error);
+  }
+});
+
+export default uploadRouter;
