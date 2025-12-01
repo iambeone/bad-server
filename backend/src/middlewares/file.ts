@@ -1,3 +1,4 @@
+// middlewares/file.ts
 import fs from 'fs';
 import { join, extname } from 'path';
 import crypto from 'crypto';
@@ -7,9 +8,7 @@ import { Request, Express } from 'express';
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-// __dirname = backend/src/middlewares
-// ..        = backend/src
-// public    = backend/src/public
+// backend/src/middlewares -> .. -> backend/src/public/temp
 const uploadDir = join(
   __dirname,
   '..',
