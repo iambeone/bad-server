@@ -24,5 +24,9 @@ jobs:
       run: set -eu && git clone --depth 1 $REP_TESTS $DIR_TESTS
     - name: Start project
       run: bash $DIR_TESTS/bin/start_project.sh
+    - name: Create temp upload dir
+      run: |
+        mkdir -p /tmp/tests-bad-server/backend/src/public/temp
+        mkdir -p /tmp/backend/src/public/temp
     - name: Run tests
       run: bash $DIR_TESTS/bin/run.sh
