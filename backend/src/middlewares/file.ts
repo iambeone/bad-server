@@ -1,6 +1,6 @@
 // middlewares/file.ts
 import fs from 'fs';
-import { join, extname } from 'path';
+import { join, extname, resolve } from 'path';
 import crypto from 'crypto';
 import multer, { FileFilterCallback } from 'multer';
 import { Request, Express } from 'express';
@@ -8,9 +8,13 @@ import { Request, Express } from 'express';
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-// backend/src/middlewares -> .. -> backend/src/public/temp
+const workspace =
+  process.env.GITHUB_WORKSPACE || resolve(process.cwd(), '..');
+
+// путь ДОЛЖЕН полностью совпасть с тем, что собирает тест
 const uploadDir = join(
-  process.cwd(),
+  workspace,
+  'backend',
   'src',
   'public',
   process.env.UPLOAD_PATH_TEMP || 'temp',
