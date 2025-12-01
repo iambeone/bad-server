@@ -349,11 +349,6 @@ export const createOrder = async (
     const { address, payment, phone, total, email, items, comment } =
       req.body;
 
-    const phoneRegex = /^\+7 \(\d{3}\) \d{3} \d{2} \d{2}$/;
-    if (typeof phone !== 'string' || !phoneRegex.test(phone)) {
-      return next(new BadRequestError('Неверный формат телефона'));
-    }
-
     items.forEach((id: Types.ObjectId) => {
       const product = products.find((p) => p._id.equals(id));
       if (!product) {
