@@ -7,7 +7,12 @@ import { Request, Express } from 'express';
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-const uploadDir = join(__dirname, '..', 'public', process.env.UPLOAD_PATH_TEMP || 'temp');
+const uploadDir = join(
+  __dirname,
+  '..',
+  'public',
+  process.env.UPLOAD_PATH_TEMP || 'temp'
+);
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -54,5 +59,5 @@ const fileFilter = (
 export default multer({
   storage,
   fileFilter,
-  limits: { fileSize: 2 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
 });

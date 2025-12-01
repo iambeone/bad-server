@@ -1,32 +1,32 @@
-import { NextFunction, Request, Response } from 'express'
-import { FilterQuery } from 'mongoose'
-import NotFoundError from '../errors/not-found-error'
-import Order from '../models/order'
-import User, { IUser } from '../models/user'
+import { NextFunction, Request, Response } from 'express';
+import { FilterQuery } from 'mongoose';
+import BadRequestError from '../errors/bad-request-error';
+import NotFoundError from '../errors/not-found-error';
+import Order from '../models/order';
+import User, { IUser } from '../models/user';
 
-// Допустимые поля сортировки
 const allowedSortFields = [
   'createdAt',
   'totalAmount',
   'orderCount',
   'lastOrderDate',
   'name',
-] as const
-type SortField = (typeof allowedSortFields)[number]
+] as const;
+type SortField = (typeof allowedSortFields)[number];
 
 function isSortField(value: string): value is SortField {
-  return (allowedSortFields as readonly string[]).includes(value)
+  return (allowedSortFields as readonly string[]).includes(value);
 }
 
 function getSortField(raw: unknown): SortField {
-  if (typeof raw !== 'string') return 'createdAt'
-  return isSortField(raw) ? raw : 'createdAt'
+  if (typeof raw !== 'string') return 'createdAt';
+  return isSortField(raw) ? raw : 'createdAt';
 }
 
 function getSortOrder(raw: unknown): 1 | -1 {
-  if (raw === 'asc') return 1
-  if (raw === 'desc') return -1
-  return -1
+  if (raw === 'asc') return 1;
+  if (raw === 'desc') return -1;
+  return -1;
 }
 
 function normalizePage(raw: unknown): number {
@@ -48,16 +48,7 @@ function parseDate(raw: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function safeRegex(raw: unknown): RegExp | null {
-  if (typeof raw !== 'string') return null;
-  try {
-    return new RegExp(raw, 'i');
-  } catch {
-    return null;
-  }
-}
-
-// TODO: Добавить guard admin
+// GET /customers
 export const getCustomers = async (
   req: Request,
   res: Response,
@@ -79,6 +70,19 @@ export const getCustomers = async (
       orderCountTo,
       search,
     } = req.query;
+
+    // 1. Валидация search: режем инъекцию сразу
+    if (typeof search !== 'undefined' && typeof search !== 'string') {
+      return next(new BadRequestError('Некорректный параметр поиска'));
+    }
+
+    if (
+      typeof search === 'string' &&
+      search.length > 0 &&
+      !/^[\p{L}\p{N}\s-]+$/u.test(search)
+    ) {
+      return next(new BadRequestError('Некорректный параметр поиска'));
+    }
 
     const filters: FilterQuery<Partial<IUser>> = {};
 
@@ -144,8 +148,9 @@ export const getCustomers = async (
       };
     }
 
-    const searchRegex = safeRegex(search);
-    if (searchRegex) {
+    // 2. Безопасный поиск по name и deliveryAddress
+    if (typeof search === 'string' && search.length > 0) {
+      const searchRegex = new RegExp(search, 'i');
       const orders = await Order.find(
         { deliveryAddress: searchRegex },
         '_id'
@@ -193,7 +198,7 @@ export const getCustomers = async (
         totalUsers,
         totalPages,
         currentPage: pageNum,
-        pageSize: limitNum, // <= всегда <= 10
+        pageSize: limitNum,
       },
     });
   } catch (error) {
@@ -201,7 +206,6 @@ export const getCustomers = async (
   }
 };
 
-// TODO: Добавить guard admin
 export const getCustomerById = async (
   req: Request,
   res: Response,
@@ -211,33 +215,31 @@ export const getCustomerById = async (
     const user = await User.findById(req.params.id).populate([
       'orders',
       'lastOrder',
-    ])
-    res.status(200).json(user)
+    ]);
+    res.status(200).json(user);
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
-// TODO: Добавить guard admin
 export const updateCustomer = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    // Белый список полей, которые реально можно менять
-    const allowedFields = ['name', 'phone'] as const
-    type UpdatableField = (typeof allowedFields)[number]
+    const allowedFields = ['name', 'phone'] as const;
+    type UpdatableField = (typeof allowedFields)[number];
 
     const updateData = allowedFields.reduce<Partial<Pick<IUser, UpdatableField>>>(
       (acc, key) => {
         if (key in req.body) {
-          acc[key] = req.body[key]
+          acc[key] = req.body[key];
         }
-        return acc
+        return acc;
       },
       {}
-    )
+    );
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
@@ -253,15 +255,14 @@ export const updateCustomer = async (
             'Пользователь по заданному id отсутствует в базе'
           )
       )
-      .populate(['orders', 'lastOrder'])
+      .populate(['orders', 'lastOrder']);
 
-    res.status(200).json(updatedUser)
+    res.status(200).json(updatedUser);
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
-// TODO: Добавить guard admin
 export const deleteCustomer = async (
   req: Request,
   res: Response,
@@ -273,9 +274,9 @@ export const deleteCustomer = async (
         new NotFoundError(
           'Пользователь по заданному id отсутствует в базе'
         )
-    )
-    res.status(200).json(deletedUser)
+    );
+    res.status(200).json(deletedUser);
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
