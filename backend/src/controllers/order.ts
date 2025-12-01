@@ -43,7 +43,22 @@ function getSortOrder(raw: unknown): 1 | -1 {
   return -1;
 }
 
-// GET /orders?page=2&limit=5&sort=totalAmount&order=desc&...
+function safeRegex(raw: unknown): RegExp | null {
+  if (typeof raw !== 'string') return null;
+  try {
+    return new RegExp(raw, 'i');
+  } catch {
+    return null;
+  }
+}
+
+function parseDate(raw: unknown): Date | null {
+  if (typeof raw !== 'string') return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// GET /orders...
 
 export const getOrders = async (
   req: Request,
@@ -88,17 +103,19 @@ export const getOrders = async (
       };
     }
 
-    if (orderDateFrom) {
+    const fromDate = parseDate(orderDateFrom);
+    if (fromDate) {
       filters.createdAt = {
         ...filters.createdAt,
-        $gte: new Date(orderDateFrom as string),
+        $gte: fromDate,
       };
     }
 
-    if (orderDateTo) {
+    const toDate = parseDate(orderDateTo);
+    if (toDate) {
       filters.createdAt = {
         ...filters.createdAt,
-        $lte: new Date(orderDateTo as string),
+        $lte: toDate,
       };
     }
 
@@ -124,23 +141,27 @@ export const getOrders = async (
       { $unwind: '$products' },
     ];
 
-    if (search) {
-      const searchRegex = new RegExp(search as string, 'i');
-      const searchNumber = Number(search);
+    const searchRegex = safeRegex(search);
+    const searchNumber = Number(search);
 
-      const searchConditions: any[] = [{ 'products.title': searchRegex }];
+    if (searchRegex || !Number.isNaN(searchNumber)) {
+      const searchConditions: any[] = [];
 
+      if (searchRegex) {
+        searchConditions.push({ 'products.title': searchRegex });
+      }
       if (!Number.isNaN(searchNumber)) {
         searchConditions.push({ orderNumber: searchNumber });
       }
 
-      aggregatePipeline.push({
-        $match: {
-          $or: searchConditions,
-        },
-      });
-
-      filters.$or = searchConditions;
+      if (searchConditions.length) {
+        aggregatePipeline.push({
+          $match: {
+            $or: searchConditions,
+          },
+        });
+        filters.$or = searchConditions;
+      }
     }
 
     const field = getSortField(sortField);
@@ -220,20 +241,24 @@ export const getOrdersCurrentUser = async (
     let orders = user.orders as unknown as IOrder[];
 
     if (search) {
-      const searchRegex = new RegExp(search as string, 'i');
+      const searchRegex = safeRegex(search);
       const searchNumber = Number(search);
-      const products = await Product.find({ title: searchRegex });
+      const products = searchRegex
+        ? await Product.find({ title: searchRegex })
+        : [];
       const productIds = products.map((product) => product._id);
 
       orders = orders.filter((order) => {
-        const matchesProductTitle = order.products.some((product) =>
-          productIds.some((id) => id.equals(product._id))
-        );
+        const matchesProductTitle =
+          searchRegex &&
+          order.products.some((product) =>
+            productIds.some((id) => id.equals(product._id))
+          );
         const matchesOrderNumber =
           !Number.isNaN(searchNumber) &&
           order.orderNumber === searchNumber;
 
-        return matchesOrderNumber || matchesProductTitle;
+        return matchesOrderNumber || Boolean(matchesProductTitle);
       });
     }
 
