@@ -10,6 +10,7 @@ type FileNameCallback = (error: Error | null, filename: string) => void;
 const uploadDir = join(
   __dirname,
   '..',
+  '..',
   'public',
   process.env.UPLOAD_PATH_TEMP || 'temp'
 );
