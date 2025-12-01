@@ -7,12 +7,7 @@ import { Request, Express } from 'express';
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-const uploadDir = join(
-  __dirname,
-  process.env.UPLOAD_PATH_TEMP
-    ? `../public/${process.env.UPLOAD_PATH_TEMP}` // .env: UPLOAD_PATH_TEMP=temp
-    : '../public'
-);
+const uploadDir = join(__dirname, '..', 'public', process.env.UPLOAD_PATH_TEMP || 'temp');
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });

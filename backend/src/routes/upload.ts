@@ -10,8 +10,8 @@ uploadRouter.post('/', upload.single('file'), (req, res, next) => {
     }
 
     return res.status(200).json({ fileName: req.file.path });
-  } catch (error) {
-    next(error);
+  } catch (e) {
+    return next(e);
   }
 });
 

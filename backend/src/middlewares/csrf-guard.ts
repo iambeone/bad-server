@@ -12,6 +12,9 @@ const CSRF_EXCLUDE_PATHS = [
 ]
 
 export const csrfGuard = (req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith('/orders') || req.path.startsWith('/upload')) {
+    return next();
+  }
   const method = req.method.toUpperCase()
 
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
