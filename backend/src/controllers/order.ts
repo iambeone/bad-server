@@ -79,6 +79,11 @@ export const getOrders = async (
       search,
     } = req.query;
 
+    if (search && typeof search !== 'string') {
+        // если пришёл объект/массив типа search[$ne] — сразу 400
+        return next(new BadRequestError('Некорректный параметр поиска'));
+    }
+
     const filters: FilterQuery<Partial<IOrder>> = {};
 
     if (status) {
@@ -142,6 +147,11 @@ export const getOrders = async (
     ];
 
     const searchRegex = safeRegex(search);
+    if (search && !searchRegex) {
+        // строка, но невалидная как регулярка → тоже 400
+        return next(new BadRequestError('Некорректный параметр поиска'));
+    }
+
     const searchNumber = Number(search);
 
     if (searchRegex || !Number.isNaN(searchNumber)) {

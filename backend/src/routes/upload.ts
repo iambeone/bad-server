@@ -9,7 +9,6 @@ uploadRouter.post('/', upload.single('file'), (req, res, next) => {
       return res.status(400).json({ message: 'Файл не загружен' });
     }
 
-    // важно вернуть путь/имя файла
     return res.status(200).json({ fileName: req.file.path });
   } catch (error) {
     next(error);

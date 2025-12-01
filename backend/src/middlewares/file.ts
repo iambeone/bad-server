@@ -10,11 +10,10 @@ type FileNameCallback = (error: Error | null, filename: string) => void;
 const uploadDir = join(
   __dirname,
   process.env.UPLOAD_PATH_TEMP
-    ? `../public/${process.env.UPLOAD_PATH_TEMP}` // -> ../public/temp
+    ? `../public/${process.env.UPLOAD_PATH_TEMP}` // .env: UPLOAD_PATH_TEMP=temp
     : '../public'
 );
 
-// гарантируем наличие каталога
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
