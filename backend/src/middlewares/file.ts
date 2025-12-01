@@ -7,26 +7,18 @@ import { Request, Express } from 'express';
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-// Пытаемся создать temp в двух возможных местах:
-// 1) dist/public/temp (запуск собранного кода)
-// 2) ../public/temp (запуск из src)
-const candidateDirs = [
-  join(__dirname, '..', 'public', process.env.UPLOAD_PATH_TEMP || 'temp'),
-  join(__dirname, '..', '..', 'public', process.env.UPLOAD_PATH_TEMP || 'temp'),
-];
+// __dirname = backend/src/middlewares
+// ..        = backend/src
+// public    = backend/src/public
+const uploadDir = join(
+  __dirname,
+  '..',
+  'public',
+  process.env.UPLOAD_PATH_TEMP || 'temp'
+);
 
-let uploadDir = candidateDirs[0];
-
-for (const dir of candidateDirs) {
-  try {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    uploadDir = dir;
-    break;
-  } catch {
-    // пробуем следующий вариант
-  }
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -66,10 +58,8 @@ const fileFilter = (
   return cb(null, true);
 };
 
-const upload = multer({
+export default multer({
   storage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 },
 });
-
-export default upload;
