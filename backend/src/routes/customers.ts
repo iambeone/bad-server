@@ -7,7 +7,14 @@ import {
 } from '../controllers/customers';
 import { roleGuardMiddleware } from '../middlewares/auth';
 import { Role } from '../models/user';
+import rateLimit from 'express-rate-limit';
 
+const customersLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const customerRouter = Router();
 
 // список всех клиентов — только для админа

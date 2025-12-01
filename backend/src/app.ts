@@ -1,3 +1,4 @@
+import './init/uploadDir'
 import { errors } from 'celebrate'
 import mongoSanitize from 'express-mongo-sanitize';
 import cookieParser from 'cookie-parser'
@@ -15,13 +16,6 @@ import rateLimit from 'express-rate-limit'
 
 const { PORT = 3000 } = process.env
 const { ORIGIN_ALLOW } = process.env
-
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 минута
-  max: 10,             // 10 запросов в минуту с IP
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 const app = express()
 const staticDir = path.join(__dirname, '..', 'public');
@@ -47,7 +41,13 @@ app.use(
 
 app.use(csrfGuard)
 app.options('*', cors())
-// app.use(apiLimiter)
+const customersLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/customers', customersLimiter);
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)

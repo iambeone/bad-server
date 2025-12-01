@@ -4,25 +4,11 @@ import { join, extname, resolve } from 'path';
 import crypto from 'crypto';
 import multer, { FileFilterCallback } from 'multer';
 import { Request, Express } from 'express';
+import uploadDir from '../init/uploadDir'; // ВАЖНО: путь под твой проект
+
 
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
-
-const workspace =
-  process.env.GITHUB_WORKSPACE || resolve(process.cwd(), '..');
-
-// путь ДОЛЖЕН полностью совпасть с тем, что собирает тест
-const uploadDir = join(
-  workspace,
-  'backend',
-  'src',
-  'public',
-  process.env.UPLOAD_PATH_TEMP || 'temp',
-);
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 const storage = multer.diskStorage({
   destination: (
