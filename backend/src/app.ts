@@ -1,4 +1,3 @@
-import './init/uploadDir'
 import { errors } from 'celebrate'
 import mongoSanitize from 'express-mongo-sanitize';
 import cookieParser from 'cookie-parser'
@@ -14,7 +13,6 @@ import { csrfGuard } from './middlewares/csrf-guard'
 import routes from './routes'
 import rateLimit from 'express-rate-limit'
 
-console.log('!!!APP started!!!')
 const { PORT = 3000 } = process.env
 const { ORIGIN_ALLOW } = process.env
 
