@@ -87,9 +87,15 @@ export const getOrders = async (
       search,
     } = req.query;
 
+    // Разрешаем только числовой search (номер заказа)
+    if (typeof search !== 'undefined') {
+      if (typeof search !== 'string' || !/^\d+$/.test(search)) {
+        return next(new BadRequestError('Некорректный параметр поиска'));
+      }
+    }
+
     const filters: FilterQuery<Partial<IOrder>> = {};
 
-    // статус
     if (status) {
       if (typeof status === 'string') {
         filters.status = status;
@@ -128,11 +134,6 @@ export const getOrders = async (
       };
     }
 
-    // Жёсткая проверка search: если не строка или содержит опасные символы → 400
-    if (search && !isSafeSearch(search)) {
-      return next(new BadRequestError('Некорректный параметр поиска'));
-    }
-
     const pageNum = normalizePage(page);
     const limitNum = normalizeLimit(limit);
 
@@ -162,13 +163,11 @@ export const getOrders = async (
       { $unwind: '$products' },
     ];
 
-    // Поиск: только по номеру заказа, без regex по строкам — защищаемся от избыточной агрегации
+    // Поиск только по номеру заказа
     const searchNumber = typeof search === 'string' ? Number(search) : NaN;
 
     if (!Number.isNaN(searchNumber)) {
-      aggregatePipeline.push({
-        $match: { orderNumber: searchNumber },
-      });
+      aggregatePipeline.push({ $match: { orderNumber: searchNumber } });
       filters.orderNumber = searchNumber;
     }
 
