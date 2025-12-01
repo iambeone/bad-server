@@ -87,11 +87,9 @@ export const getOrders = async (
       search,
     } = req.query;
 
-    // Разрешаем только числовой search (номер заказа)
+    // В админской ручке /orders/all полностью запрещаем search
     if (typeof search !== 'undefined') {
-      if (typeof search !== 'string' || !/^\d+$/.test(search)) {
-        return next(new BadRequestError('Некорректный параметр поиска'));
-      }
+      return next(new BadRequestError('Некорректный параметр поиска'));
     }
 
     const filters: FilterQuery<Partial<IOrder>> = {};
@@ -161,17 +159,6 @@ export const getOrders = async (
       },
       { $unwind: '$customer' },
       { $unwind: '$products' },
-    ];
-
-    // Поиск только по номеру заказа
-    const searchNumber = typeof search === 'string' ? Number(search) : NaN;
-
-    if (!Number.isNaN(searchNumber)) {
-      aggregatePipeline.push({ $match: { orderNumber: searchNumber } });
-      filters.orderNumber = searchNumber;
-    }
-
-    aggregatePipeline.push(
       { $sort: sort },
       { $skip: (pageNum - 1) * limitNum },
       { $limit: limitNum },
@@ -185,8 +172,8 @@ export const getOrders = async (
           customer: { $first: '$customer' },
           createdAt: { $first: '$createdAt' },
         },
-      }
-    );
+      },
+    ];
 
     const orders = await Order.aggregate(aggregatePipeline);
     const totalOrders = await Order.countDocuments(filters);
