@@ -11,9 +11,18 @@ import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import { csrfGuard } from './middlewares/csrf-guard'
 import routes from './routes'
+import rateLimit from 'express-rate-limit'
 
 const { PORT = 3000 } = process.env
 const { ORIGIN_ALLOW } = process.env
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 минута
+  max: 10,             // например, 10 запросов в минуту с IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const app = express()
 const staticDir = path.join(__dirname, '..', 'public');
 app.use(serveStatic(staticDir));
@@ -38,6 +47,7 @@ app.use(
 
 app.use(csrfGuard)
 app.options('*', cors())
+app.use(apiLimiter)
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)
