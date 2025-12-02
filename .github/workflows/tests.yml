@@ -26,3 +26,7 @@ jobs:
       run: bash $DIR_TESTS/bin/start_project.sh
     - name: Run tests
       run: bash $DIR_TESTS/bin/run.sh
+    - name: Show backend logs
+      if: failure() # только если тесты упали
+      run: |
+        docker compose logs backend
