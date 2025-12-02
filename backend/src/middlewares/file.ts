@@ -1,4 +1,5 @@
 // middlewares/file.ts
+import fs from 'fs';
 import path, { extname } from 'path';
 import crypto from 'crypto';
 import multer, { FileFilterCallback } from 'multer';
@@ -7,15 +8,15 @@ import { Request, Express } from 'express';
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-// Ровно та же логика, что в тесте:
-const workspace =
-  process.env.GITHUB_WORKSPACE || path.resolve(process.cwd(), '..');
+// В КОНТЕЙНЕРЕ путь к коду: /backend/src/...
+// Логи показывают попытку открыть /backend/src/public/temp/...
+// Значит, просто жёстко используем этот путь:
+const uploadDir = '/backend/src/public/' + (process.env.UPLOAD_PATH_TEMP || 'temp');
 
-const uploadDir = path.join(
-  workspace,
-  'backend/src/public',
-  process.env.UPLOAD_PATH_TEMP || 'temp',
-);
+// Гарантированно создаём каталог и локально, и в контейнере
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: (_req: Request, _file: Express.Multer.File, cb: DestinationCallback) => {
