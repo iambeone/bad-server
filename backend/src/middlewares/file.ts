@@ -7,39 +7,18 @@ import { Request, Express } from 'express';
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-// 1) Путь внутри контейнера (туда пишет Multer)
 const internalUploadDir = path.join(
-  '/backend/src/public',
+  process.cwd(), // /app
+  'src/public',
   process.env.UPLOAD_PATH_TEMP || 'temp',
 );
 
-// 2) Путь снаружи, как в тестах (через GITHUB_WORKSPACE)
-const workspace =
-  process.env.GITHUB_WORKSPACE || path.resolve(process.cwd(), '..');
-
-const externalUploadDir = path.join(
-  workspace,
-  'backend/src/public',
-  process.env.UPLOAD_PATH_TEMP || 'temp',
-);
-
-// Функция безопасного создания каталога
-const ensureDir = (dir: string) => {
-  try {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-      console.log('UPLOAD DIR CREATED:', dir);
-    } else {
-      console.log('UPLOAD DIR EXISTS:', dir);
-    }
-  } catch (e) {
-    console.error('UPLOAD DIR CREATE ERROR:', dir, e);
-  }
-};
-
-// Создаём оба каталога (если получается)
-ensureDir(internalUploadDir);
-ensureDir(externalUploadDir);
+if (!fs.existsSync(internalUploadDir)) {
+  fs.mkdirSync(internalUploadDir, { recursive: true });
+  console.log('UPLOAD DIR CREATED:', internalUploadDir);
+} else {
+  console.log('UPLOAD DIR EXISTS:', internalUploadDir);
+}
 
 const storage = multer.diskStorage({
   destination: (_req: Request, _file: Express.Multer.File, cb: DestinationCallback) => {
