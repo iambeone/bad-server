@@ -30,6 +30,8 @@ if (!fs.existsSync(tempDir)) {
   console.log('APP TEMP DIR EXISTS:', tempDir);
 }
 
+
+
 const app = express()
 const staticDir = path.join(__dirname, '..', 'public');
 app.use(serveStatic(staticDir));
