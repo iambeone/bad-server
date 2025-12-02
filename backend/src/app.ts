@@ -16,6 +16,8 @@ import fs from 'fs'
 
 const { PORT = 3000 } = process.env
 const { ORIGIN_ALLOW } = process.env
+console.log('GITHUB_WORKSPACE IN APP:', process.env.GITHUB_WORKSPACE);
+console.log('CWD IN APP:', process.cwd());
 // 1. Создаём temp-каталог сразу при старте приложения
 const workspace =
   process.env.GITHUB_WORKSPACE || path.resolve(process.cwd(), '..');
