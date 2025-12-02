@@ -34,19 +34,19 @@ uploadRouter.post('/', upload.single('file'), (req, res, next) => {
     }
 
     // Проверка PNG
-    if (req.file.mimetype === 'image/png') {
-        const fileBuffer = fs.readFileSync(req.file.path);
+    // if (req.file.mimetype === 'image/png') {
+    //     const fileBuffer = fs.readFileSync(req.file.path);
 
-        // «пустой» PNG из теста — строго 5MB нулей → отклоняем
-        const isAllZero =
-            fileBuffer.length === 5 * 1024 * 1024 &&
-            fileBuffer.every((byte) => byte === 0);
+    //     // «пустой» PNG из теста — строго 5MB нулей → отклоняем
+    //     const isAllZero =
+    //         fileBuffer.length === 5 * 1024 * 1024 &&
+    //         fileBuffer.every((byte) => byte === 0);
 
-        if (isAllZero) {
-            return res.status(400).json({ message: 'Недопустимое изображение' });
-        }
-        // любые другие PNG (включая mimage.png) считаем валидными
-    }
+    //     if (isAllZero) {
+    //         return res.status(400).json({ message: 'Недопустимое изображение' });
+    //     }
+    //     // любые другие PNG (включая mimage.png) считаем валидными
+    // }
     return res.status(200).json({ fileName: req.file.path });
   } catch (e) {
     return next(e);
