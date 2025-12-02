@@ -29,3 +29,8 @@ jobs:
         mkdir -p "$GITHUB_WORKSPACE/backend/src/public/temp"
     - name: Run tests
       run: bash $DIR_TESTS/bin/run.sh
+    - name: Show backend logs
+      if: failure() # только если тесты упали
+      run: |
+        cd $DIR_TESTS
+        docker compose logs backend
