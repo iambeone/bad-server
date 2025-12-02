@@ -35,8 +35,9 @@ import LogoutPage from '@pages/logout'
 import MainPage from '@pages/main'
 import ProfilePage from '@pages/profile'
 import RegisterPage from '@pages/register/register-page'
-import { userActions } from '@slices/user'
-import { useActionCreators } from '@store/hooks'
+import { checkUserAuth } from '@slices/user/thunk'; // путь подстрой
+import { userActions } from '@slices/user/index';           // из userSlice.actions
+import { useDispatch } from '@store/hooks'
 import store, { persistor } from '@store/store'
 import { PropsWithChildren, useEffect } from 'react'
 import { Provider } from 'react-redux'
@@ -58,20 +59,23 @@ const App = () => (
 
 export default App
 
+
 const RouteComponent = () => {
-    const location = useLocation()
-    const navigate = useNavigate()
-    const { authCheck, checkUserAuth } = useActionCreators(userActions)
-    const handleModalClose = (path: To | number) => () => navigate(path as To)
-
+    const dispatch = useDispatch();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const handleModalClose = (path: To | number) => () => navigate(path as To);
+    const { authCheck } = userActions;
     useEffect(() => {
-        checkUserAuth()
-            .unwrap()
-            .finally(() => authCheck())
-    }, [checkUserAuth, authCheck])
+        dispatch(checkUserAuth())
+            .unwrap()                         // типизированный промис от dispatch
+            .finally(() => {
+                dispatch(authCheck());
+            });
+    }, [dispatch]);
 
-    const locationState = location.state as { background?: Location }
-    const background = locationState && locationState.background
+    const locationState = location.state as { background?: Location };
+    const background = locationState && locationState.background;
 
     return (
         <>

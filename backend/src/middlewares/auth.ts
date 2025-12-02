@@ -28,7 +28,7 @@ const auth = async (req: Request, res: Response, next: NextFunction) => {
         )
 
         if (!user) {
-            return next(new ForbiddenError('Нет доступа'))
+            return next(new UnauthorizedError('Необходима авторизация'))
         }
         res.locals.user = user
 

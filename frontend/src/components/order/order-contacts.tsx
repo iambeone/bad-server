@@ -8,67 +8,68 @@ import Form from '../form/form'
 import useFormWithValidation from '../form/hooks/useFormWithValidation'
 import { ContactsFormValues } from './helpers/types'
 
-import { useActionCreators, useSelector } from '../../services/hooks'
+import { useActionCreators, useDispatch, useSelector } from '../../services/hooks'
 import { basketActions } from '../../services/slice/basket'
 import {
     orderFormActions,
     orderFormSelector,
 } from '../../services/slice/orderForm'
+import { createOrder } from '@slices/orderForm/thunk'
 import EditorInput from '../editor-text/editor-input'
 import styles from './order.module.scss'
 
 export function OrderContacts() {
-    const location = useLocation()
-    const navigate = useNavigate()
-    const { selectOrderInfo } = orderFormSelector
-    const orderPersistData = useSelector(selectOrderInfo)
-    const formRef = useRef<HTMLFormElement | null>(null)
-    const { setInfo, createOrder } = useActionCreators(orderFormActions)
-    const { resetBasket } = useActionCreators(basketActions)
+  const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { selectOrderInfo } = orderFormSelector;
+  const orderPersistData = useSelector(selectOrderInfo);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
-    const { values, handleChange, errors, isValid, setValuesForm } =
-        useFormWithValidation<ContactsFormValues>(
-            { email: '', phone: '', comment: '' },
-            formRef.current
-        )
+  const { setInfo } = useActionCreators(orderFormActions);
+  const { resetBasket } = useActionCreators(basketActions);
 
-    useEffect(() => {
-        // восстанавливаем значение формы из стора
-        setValuesForm({
-            email: orderPersistData.email,
-            phone: orderPersistData.phone,
-        })
-    }, [orderPersistData])
+  const { values, handleChange, errors, isValid, setValuesForm } =
+    useFormWithValidation<ContactsFormValues>(
+      { email: '', phone: '', comment: '' },
+      formRef.current
+    );
 
-    const handleEditInputChange = (value: string) => {
-        setValuesForm({ ...values, comment: value })
-    }
+  useEffect(() => {
+    setValuesForm({
+      email: orderPersistData.email,
+      phone: orderPersistData.phone,
+    });
+  }, [orderPersistData, setValuesForm]);
 
-    const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        setInfo(values)
-        // т.к. на момент отправки запроса данные введенные в поля еще не записаны в store, добавляем в запрос их вручную
-        createOrder({ ...orderPersistData, ...values })
-            .unwrap()
-            .then((dataResponse) => {
-                resetBasket()
-                navigate(
-                    { pathname: AppRoute.OrderSuccess },
-                    {
-                        state: {
-                            orderResponse: dataResponse,
-                            background: {
-                                ...location,
-                                pathname: '/',
-                                state: null,
-                            },
-                        },
-                        replace: true,
-                    }
-                )
-            })
-    }
+  const handleEditInputChange = (value: string) => {
+    setValuesForm({ ...values, comment: value });
+  };
 
+  const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setInfo(values);
+
+    dispatch(createOrder({ ...orderPersistData, ...values }))
+      .unwrap()
+      .then((dataResponse) => {
+        resetBasket();
+        navigate(
+          { pathname: AppRoute.OrderSuccess },
+          {
+            state: {
+              orderResponse: dataResponse,
+              background: {
+                ...location,
+                pathname: '/',
+                state: null,
+              },
+            },
+            replace: true,
+          }
+        );
+      });
+    };
     return (
         <Form handleFormSubmit={handleFormSubmit} formRef={formRef}>
             <Input

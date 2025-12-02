@@ -1,3 +1,5 @@
+//ReDoS (Regular Expression Denial of Service) не найден
+
 export function getCookie(name: string) {
     const matches = document.cookie.match(
         new RegExp(

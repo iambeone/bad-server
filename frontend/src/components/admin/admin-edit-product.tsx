@@ -5,10 +5,10 @@ import { SyntheticEvent, useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { useActionCreators } from '../../services/hooks'
+import { useActionCreators, useDispatch } from '../../services/hooks'
 import {
     productsActions,
-    productsSelector,
+    productsSelector
 } from '../../services/slice/products'
 import {
     AppRoute,
@@ -24,6 +24,7 @@ import { ProductFormValues } from './helpers/types'
 
 export default function AdminEditProduct() {
     const navigate = useNavigate()
+    const dispatch = useDispatch()
     const { editId } = useParams()
     const { updateProduct, deleteProduct, uploadImageFile } =
         useActionCreators(productsActions)
@@ -46,16 +47,16 @@ export default function AdminEditProduct() {
 
     const handleFileChange = (e: SyntheticEvent<HTMLInputElement>) => {
         if (e.currentTarget.files?.length) {
-            const dataFile = new FormData()
-            dataFile.append('file', e.currentTarget.files[0])
+            const dataFile = new FormData();
+            dataFile.append('file', e.currentTarget.files[0]);
 
-            uploadImageFile(dataFile)
-                .unwrap()
-                .then((data) => {
-                    setSelectedFile(data)
-                })
+            dispatch(uploadImageFile(dataFile))
+            .unwrap()
+            .then((data) => {
+                setSelectedFile(data);
+            });
         }
-    }
+    };
 
     useEffect(() => {
         const currentCategory = CATEGORY_TYPES.find(
@@ -71,33 +72,29 @@ export default function AdminEditProduct() {
                 title: currentProduct.title,
             })
         }
-    }, [currentProduct])
+    }, [currentProduct, setValuesForm])
 
-    const handleUpdateProduct = async () => {
-        if (!selectedCategory) {
-            return
-        }
+    const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        if (!selectedCategory || !editId) return;
+
         const dataProduct = {
             ...values,
-            category: selectedCategory?.title as keyof typeof CATEGORY_CLASSES,
+            category: selectedCategory.title as keyof typeof CATEGORY_CLASSES,
             image: selectedFile ? selectedFile : undefined,
             price: values.price ? values.price : null,
-        }
+        };
 
-        editId &&
-            updateProduct({ data: dataProduct, id: editId })
-                .unwrap()
-                .then(() => navigateAdminList())
-                .catch((error) => toast.error(error.message))
-    }
-    const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        handleUpdateProduct()
-    }
+        dispatch(updateProduct({ data: dataProduct, id: editId }))
+            .unwrap()
+            .then(() => navigateAdminList())
+            .catch((error) => toast.error(error.message));
+    };
 
     const handleDeleteProduct = () => {
         editId &&
-            deleteProduct(editId)
+            dispatch(deleteProduct(editId))
                 .unwrap()
                 .then(() => navigateAdminList())
                 .catch((error) => toast.error(error.message))

@@ -1,3 +1,6 @@
-@use '../vendor/normalize';
-@use '../vendor/ys-text';
-@use '../vendor/glyphter';
+@use '../vendor/normalize' as *;
+@use '../vendor/ys-text' as *;
+@use '../vendor/glyphter' as *;
+@use "mixins/_index" as *;
+@use "_variables" as *;
+

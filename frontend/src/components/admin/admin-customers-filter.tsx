@@ -4,6 +4,7 @@ import {
     customersActions,
     customersSelector,
 } from '../../services/slice/customers'
+import { FiltersCustomers } from '../../services/slice/customers/type'
 import { fetchCustomersWithFilters } from '../../services/slice/customers/thunk'
 import { AppRoute } from '../../utils/constants'
 import Filter from '../filter'
@@ -18,22 +19,24 @@ export default function AdminFilterCustomers() {
     const filterCustomersOption = useSelector(
         customersSelector.selectFilterOption
     )
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
-    const handleFilter = (filters: Record<string, any>) => {
-        dispatch(updateFilter({ ...filters }))
-        const queryParams: { [key: string]: string } = {}
+    const handleFilter = (filters: FiltersCustomers) => {
+        dispatch(updateFilter(filters))
+        const queryParams: Record<string, string> = {}
+
         Object.entries(filters).forEach(([key, value]) => {
             if (value) {
-                queryParams[key] =
-                    typeof value === 'object' ? value.value : value.toString()
+            if (typeof value === 'object' && value !== null && 'value' in value) {
+                queryParams[key] = String((value as { value: unknown }).value)
+            } else {
+                queryParams[key] = String(value)
+            }
             }
         })
+
         setSearchParams(queryParams)
         navigate(
-            `${AppRoute.AdminCustomers}?${new URLSearchParams(
-                queryParams
-            ).toString()}`
+            `${AppRoute.AdminCustomers}?${new URLSearchParams(queryParams).toString()}`
         )
     }
 

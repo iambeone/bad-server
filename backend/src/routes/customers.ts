@@ -1,17 +1,28 @@
-import { Router } from 'express'
+import { Router } from 'express';
 import {
-    deleteCustomer,
-    getCustomerById,
-    getCustomers,
-    updateCustomer,
-} from '../controllers/customers'
-import auth from '../middlewares/auth'
+  deleteCustomer,
+  getCustomerById,
+  getCustomers,
+  updateCustomer,
+} from '../controllers/customers';
+import { roleGuardMiddleware } from '../middlewares/auth';
+import { Role } from '../models/user';
+import rateLimit from 'express-rate-limit';
 
-const customerRouter = Router()
+const customersLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const customerRouter = Router();
 
-customerRouter.get('/', auth, getCustomers)
-customerRouter.get('/:id', auth, getCustomerById)
-customerRouter.patch('/:id', auth, updateCustomer)
-customerRouter.delete('/:id', auth, deleteCustomer)
+// список всех клиентов — только для админа
+customerRouter.get('/', roleGuardMiddleware(Role.Admin), getCustomers);
 
-export default customerRouter
+// остальные ручки — только аутентификация (она уже навешана в index router)
+customerRouter.get('/:id', getCustomerById);
+customerRouter.patch('/:id', updateCustomer);
+customerRouter.delete('/:id', deleteCustomer);
+
+export default customerRouter;

@@ -10,6 +10,10 @@ import NotFoundError from '../errors/not-found-error'
 import UnauthorizedError from '../errors/unauthorized-error'
 import User from '../models/user'
 
+const CSRF_COOKIE_NAME = 'csrfToken'
+
+const generateCsrfToken = () => crypto.randomBytes(32).toString('hex')
+
 // POST /auth/login
 const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -22,6 +26,12 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        const csrfToken = generateCsrfToken()
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+            httpOnly: false,      // нужно, чтобы фронт прочитал через document.cookie
+            sameSite: 'lax',      // минимум Lax
+            secure: process.env.NODE_ENV === 'production',
+        })
         return res.json({
             success: true,
             user,
@@ -46,6 +56,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        const csrfToken = generateCsrfToken()
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+            httpOnly: false,      // нужно, чтобы фронт прочитал через document.cookie
+            sameSite: 'lax',      // минимум Lax
+            secure: process.env.NODE_ENV === 'production',
+        })
         return res.status(constants.HTTP_STATUS_CREATED).json({
             success: true,
             user: newUser,
@@ -154,6 +170,12 @@ const refreshAccessToken = async (
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        const csrfToken = generateCsrfToken()
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+            httpOnly: false,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+        })
         return res.json({
             success: true,
             user: userWithRefreshTkn,
@@ -165,21 +187,19 @@ const refreshAccessToken = async (
 }
 
 const getCurrentUserRoles = async (
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
 ) => {
     const userId = res.locals.user._id
     try {
-        await User.findById(userId, req.body, {
-            new: true,
-        }).orFail(
+        const user = await User.findById(userId, { roles: 1 }).orFail(
             () =>
                 new NotFoundError(
                     'Пользователь по заданному id отсутствует в базе'
                 )
         )
-        res.status(200).json(res.locals.user.roles)
+        res.status(200).json({ roles: user.roles, success: true })
     } catch (error) {
         next(error)
     }
@@ -192,14 +212,27 @@ const updateCurrentUser = async (
 ) => {
     const userId = res.locals.user._id
     try {
-        const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
+        const allowedFields = ['name', 'phone'] as const
+        type UpdatableField = (typeof allowedFields)[number]
+
+        const updateData: Partial<Record<UpdatableField, unknown>> = {}
+
+        Object.entries(req.body).forEach(([key, value]) => {
+            if (allowedFields.includes(key as UpdatableField)) {
+                updateData[key as UpdatableField] = value
+            }
+        })
+
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
             new: true,
+            runValidators: true,
         }).orFail(
             () =>
                 new NotFoundError(
                     'Пользователь по заданному id отсутствует в базе'
                 )
         )
+
         res.status(200).json(updatedUser)
     } catch (error) {
         next(error)

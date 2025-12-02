@@ -2,15 +2,17 @@ import Button from '@components/button/button'
 import Form from '@components/form'
 import { SyntheticEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useActionCreators } from '../../services/hooks'
+import { useActionCreators, useDispatch } from '../../services/hooks'
 import { userActions } from '../../services/slice/user'
+import { logoutUser } from '../../services/slice/user/thunk';
 import styles from './logout-page.module.scss'
 export default function LogoutPage() {
-    const { logoutUser, resetUser } = useActionCreators(userActions)
+    const dispatch = useDispatch()
+    const { resetUser } = useActionCreators(userActions)
     const navigate = useNavigate()
     const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault()
-        logoutUser()
+        dispatch(logoutUser())
             .unwrap()
             .then(() => resetUser())
     }

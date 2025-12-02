@@ -1,8 +1,9 @@
 import { Joi, celebrate } from 'celebrate'
 import { Types } from 'mongoose'
 
+// ReDoS (Regular Expression Denial of Service) не найден
 // eslint-disable-next-line no-useless-escape
-export const phoneRegExp = /^(\+\d+)?(?:\s|-?|\(?\d+\)?)+$/
+export const phoneRegExp = /^\+7 \(\d{3}\) \d{3} \d{2} \d{2}$/
 
 export enum PaymentType {
     Card = 'card',

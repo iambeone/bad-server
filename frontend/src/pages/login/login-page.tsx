@@ -4,28 +4,28 @@ import useFormWithValidation from '@components/form/hooks/useFormWithValidation'
 import { SyntheticEvent, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { useActionCreators } from '../../services/hooks'
-import { userActions } from '../../services/slice/user'
+import { useDispatch } from '../../services/hooks'
 import { AppRoute } from '../../utils/constants'
 import { LoginFormValues } from './helpers/types'
 import styles from './login-page.module.scss'
+import { loginUser } from '@slices/user/thunk'
 export default function LoginPage() {
-    const formRef = useRef<HTMLFormElement>(null)
-    const { values, handleChange, errors, isValid } =
-        useFormWithValidation<LoginFormValues>(
-            { email: '', password: '' },
-            formRef.current
-        )
-    const { loginUser } = useActionCreators(userActions)
+  const dispatch = useDispatch()
+  const formRef = useRef<HTMLFormElement>(null);
+  const { values, handleChange, errors, isValid } =
+    useFormWithValidation<LoginFormValues>(
+      { email: '', password: '' },
+      formRef.current
+    );
 
-    const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        loginUser(values)
-            .unwrap()
-            .catch((err) => {
-                toast.error(err.message)
-            })
-    }
+  const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    dispatch(loginUser(values))
+      .unwrap()
+      .catch((err) => {
+        toast.error(err.message);
+      });
+    };
 
     return (
         <div className={styles.login}>

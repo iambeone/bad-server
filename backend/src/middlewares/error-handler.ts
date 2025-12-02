@@ -1,14 +1,14 @@
-import { ErrorRequestHandler } from 'express'
+import { ErrorRequestHandler } from 'express';
 
-const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
-    const statusCode = err.statusCode || 500
-    const message =
-        statusCode === 500 ? 'На сервере произошла ошибка' : err.message
-    console.log(err)
+const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  const statusCode = err.statusCode || 500;
+  console.error('GLOBAL ERROR:', err);
+  const message =
+    statusCode === 500 ? err.message : 'На сервере произошла ошибка' ;
 
-    res.status(statusCode).send({ message })
+  console.log(err);
 
-    next()
-}
+  return res.status(statusCode).send({ message });
+};
 
-export default errorHandler
+export default errorHandler;

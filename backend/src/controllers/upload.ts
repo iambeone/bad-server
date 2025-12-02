@@ -1,26 +1,48 @@
-import { NextFunction, Request, Response } from 'express'
-import { constants } from 'http2'
-import BadRequestError from '../errors/bad-request-error'
+import { Router } from 'express';
+import upload from '../middlewares/file';
+import fs from 'fs'
 
-export const uploadFile = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+const uploadRouter = Router();
+
+uploadRouter.post('/', upload.single('file'), (req, res, next) => {
+  console.log('UPLOAD ROUTE HIT', {
+    hasFile: !!req.file,
+    mimetype: req.file?.mimetype,
+    size: req.file?.size,
+    path: req.file?.path,
+  });
+
+  try {
     if (!req.file) {
-        return next(new BadRequestError('Файл не загружен'))
+      console.log('NO FILE IN REQUEST');
+      return res.status(400).json({ message: 'Файл не загружен' });
     }
-    try {
-        const fileName = process.env.UPLOAD_PATH
-            ? `/${process.env.UPLOAD_PATH}/${req.file.filename}`
-            : `/${req.file?.filename}`
-        return res.status(constants.HTTP_STATUS_CREATED).send({
-            fileName,
-            originalName: req.file?.originalname,
-        })
-    } catch (error) {
-        return next(error)
-    }
-}
 
-export default {}
+    if (req.file.size < 2 * 1024) {
+      console.log('FILE TOO SMALL', req.file.size);
+      return res.status(400).json({ message: 'Файл слишком маленький' });
+    }
+
+    if (req.file.mimetype === 'image/png') {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const isAllZero =
+        fileBuffer.length === 5 * 1024 * 1024 &&
+        fileBuffer.every((byte) => byte === 0);
+
+      console.log('PNG CHECK', { length: fileBuffer.length, isAllZero });
+
+      if (isAllZero) {
+        return res.status(400).json({ message: 'Недопустимое изображение' });
+      }
+    }
+
+    console.log('UPLOAD OK, SENDING 200', { path: req.file.path });
+    return res.status(200).json({ fileName: req.file.path });
+  } catch (e) {
+    console.error('UPLOAD ERROR', e);
+    return next(e);
+  }
+});
+
+
+export default uploadRouter;

@@ -4,7 +4,7 @@ import useFormWithValidation from '@components/form/hooks/useFormWithValidation'
 import { SyntheticEvent, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { useActionCreators } from '../../services/hooks'
+import { useActionCreators, useDispatch } from '../../services/hooks'
 import { productsActions } from '../../services/slice/products'
 import {
     AppRoute,
@@ -20,6 +20,7 @@ import { ProductFormValues } from './helpers/types'
 
 export default function AdminNewProduct() {
     const navigate = useNavigate()
+    const dispatch = useDispatch()
     const formRef = useRef<HTMLFormElement>(null)
     const { values, handleChange, errors, isValid } =
         useFormWithValidation<ProductFormValues>(
@@ -43,11 +44,12 @@ export default function AdminNewProduct() {
             const dataFile = new FormData()
             dataFile.append('file', e.currentTarget.files[0])
 
-            uploadImageFile(dataFile)
+            dispatch(uploadImageFile(dataFile))
                 .unwrap()
                 .then((data) => {
                     setSelectedFile(data)
                 })
+                .catch((error) => toast.error(error.message))
         }
     }
 
@@ -62,7 +64,7 @@ export default function AdminNewProduct() {
             image: selectedFile,
             price: values.price ? values.price : null,
         }
-        await createProduct(dataProduct)
+        await dispatch(createProduct(dataProduct))
             .unwrap()
             .then(() => navigateAdminList())
             .catch((error) => toast.error(error.message))
