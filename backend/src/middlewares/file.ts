@@ -1,5 +1,5 @@
 // middlewares/file.ts
-import path, { extname } from 'path';
+import { join, extname } from 'path';
 import crypto from 'crypto';
 import multer, { FileFilterCallback } from 'multer';
 import { Request, Express } from 'express';
@@ -7,13 +7,13 @@ import { Request, Express } from 'express';
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-// Ровно та же логика, что в тесте:
-const workspace =
-  process.env.GITHUB_WORKSPACE || path.resolve(process.cwd(), '..');
-
-const uploadDir = path.join(
-  workspace,
-  'backend/src/public',
+// НИЧЕГО не создаём, просто используем путь,
+// который уже создал GitHub Actions: backend/src/public/temp
+// __dirname = backend/src/middlewares → .. → backend/src/public/temp
+const uploadDir = join(
+  __dirname,
+  '..',
+  'public',
   process.env.UPLOAD_PATH_TEMP || 'temp',
 );
 
