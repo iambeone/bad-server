@@ -17,9 +17,9 @@ import fs from 'fs'
 const { PORT = 3000 } = process.env
 const { ORIGIN_ALLOW } = process.env
 // внутри контейнера процесс cwd = /app, а src/public/… примонтирован из backend/src/public/…
+console.log(process.cwd());
 const tempDir = path.join(
-  process.cwd(), // /app
-  'src/public',
+  './public',
   process.env.UPLOAD_PATH_TEMP || 'temp',
 );
 
