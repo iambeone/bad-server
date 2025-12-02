@@ -12,9 +12,26 @@ import serveStatic from './middlewares/serverStatic'
 import { csrfGuard } from './middlewares/csrf-guard'
 import routes from './routes'
 import rateLimit from 'express-rate-limit'
+import fs from 'fs'
 
 const { PORT = 3000 } = process.env
 const { ORIGIN_ALLOW } = process.env
+// 1. Создаём temp-каталог сразу при старте приложения
+const workspace =
+  process.env.GITHUB_WORKSPACE || path.resolve(process.cwd(), '..');
+
+const tempDir = path.join(
+  workspace,
+  'backend/src/public',
+  process.env.UPLOAD_PATH_TEMP || 'temp',
+);
+
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir, { recursive: true });
+  console.log('APP TEMP DIR CREATED:', tempDir);
+} else {
+  console.log('APP TEMP DIR EXISTS:', tempDir);
+}
 
 const app = express()
 const staticDir = path.join(__dirname, '..', 'public');
