@@ -24,12 +24,5 @@ jobs:
       run: set -eu && git clone --depth 1 $REP_TESTS $DIR_TESTS
     - name: Start project
       run: bash $DIR_TESTS/bin/start_project.sh
-    - name: Create temp upload dir
-      run: |
-        mkdir -p "$GITHUB_WORKSPACE/backend/src/public/temp"
     - name: Run tests
       run: bash $DIR_TESTS/bin/run.sh
-    - name: Show backend logs
-      if: failure() # только если тесты упали
-      run: |
-        docker compose logs backend
