@@ -32,5 +32,4 @@ jobs:
     - name: Show backend logs
       if: failure() # только если тесты упали
       run: |
-        cd $DIR_TESTS
         docker compose logs backend
