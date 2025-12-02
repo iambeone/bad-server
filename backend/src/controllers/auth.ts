@@ -28,9 +28,9 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
         )
         const csrfToken = generateCsrfToken()
         res.cookie(CSRF_COOKIE_NAME, csrfToken, {
-        httpOnly: false,      // нужно, чтобы фронт прочитал через document.cookie
-        sameSite: 'lax',      // минимум Lax
-        secure: process.env.NODE_ENV === 'production',
+            httpOnly: false,      // нужно, чтобы фронт прочитал через document.cookie
+            sameSite: 'lax',      // минимум Lax
+            secure: process.env.NODE_ENV === 'production',
         })
         return res.json({
             success: true,
