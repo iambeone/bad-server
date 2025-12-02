@@ -12,9 +12,8 @@ const workspace =
   process.env.GITHUB_WORKSPACE || path.resolve(process.cwd(), '..');
 
 const uploadDir = path.join(
-  __dirname,
-  '..',
-  'public',
+  workspace,
+  'backend/src/public',
   process.env.UPLOAD_PATH_TEMP || 'temp',
 );
 
